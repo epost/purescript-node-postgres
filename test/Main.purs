@@ -1,4 +1,4 @@
-module Test.Examples where
+module Test.Main where
 
 import Database.Postgres
 import Debug.Trace

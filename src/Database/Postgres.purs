@@ -1,6 +1,8 @@
 module Database.Postgres where
 
 import Control.Monad.Eff
+import Control.Monad.Cont.Trans
+import Control.Monad.Trans
 import Data.Either
 import Data.Array
 import Data.Foreign
@@ -12,7 +14,7 @@ foreign import data Client :: *
 
 foreign import data DB :: !
 
-type DBEff a = forall eff. Eff (db :: DB | eff) a
+type DBEff eff = Eff (db :: DB | eff)
 
 type ConnectionInfo =
   { host :: String
@@ -22,8 +24,16 @@ type ConnectionInfo =
   , password :: String
   }
 
-connect :: ConnectionInfo -> DBEff Client
+
+-- Low-level API. --------------------------------------------------------------
+
+connect :: forall eff. ConnectionInfo -> DBEff eff Client
 connect ci = connectJS $ "postgres://" <> ci.user <> ":" <> ci.password <> "@" <> ci.host <> ":" <> show ci.port <> "/" <> ci.db
+
+runQuery :: forall row eff. (IsForeign row) =>
+            Query -> Client -> ([F row] -> DBEff eff Unit) -> DBEff eff Unit
+runQuery query client handleRows = runQueryRowsForeignRaw query client (map read >>> handleRows)
+
 
 foreign import connectJS """
   function connectJS(conString) {
@@ -33,7 +43,7 @@ foreign import connectJS """
       return client;
     };
   }
-""" :: String -> DBEff Client
+""" :: forall eff. String -> DBEff eff Client
 
 
 foreign import connectClient """
@@ -42,7 +52,7 @@ foreign import connectClient """
       client.connect();
     };
   }
-""" :: Client -> DBEff Unit
+""" :: forall eff. Client -> DBEff eff Unit
 
 foreign import endClient """
   function endClient(client) {
@@ -50,28 +60,37 @@ foreign import endClient """
       client.end();
     };
   }
-""" :: Client -> DBEff Unit
+""" :: forall eff. Client -> DBEff eff Unit
 
 
 foreign import runQueryRowsForeignRaw """
-  function runQueryRowsForeignRaw(client) {
-      return function (queryStr) {
-        return function(onRow) {
+  function runQueryRowsForeignRaw(queryStr) {
+      return function (client) {
+        return function(handleRows) {
             return function() {
               client.query(queryStr, function(err, result) {
                 if (err) {
                   console.error('error running query', err);
                 } else {
-                  onRow(result.rows)();
+                  handleRows(result.rows)();
                 }
               });
             };
           };
         };
   }
-  """ :: forall eff. Client -> Query -> ([Foreign] -> eff) -> DBEff Unit
+  """ :: forall eff eff'. Query -> Client -> ([Foreign] -> eff') -> DBEff eff Unit
 
 
-runQuery :: forall row eff. (IsForeign row) =>
-            Client -> Query -> ([F row] -> eff) -> DBEff Unit
-runQuery client query handleRows = runQueryRowsForeignRaw client query (map read >>> handleRows)
+-- Continuation-based API. -----------------------------------------------------
+
+runQueryCont :: forall eff a. (IsForeign a) => Query -> Client -> ContT Unit (DBEff eff) [F a]
+runQueryCont query client = ContT $ runQuery query client
+
+withConnectionCont :: forall eff a. ConnectionInfo -> (Client -> ContT Unit (DBEff eff) a) -> ContT Unit (DBEff eff) a
+withConnectionCont connectionInfo dbProg = do
+  client <- lift $ connect connectionInfo
+  lift $ connectClient client
+  res <- dbProg client
+  lift $ endClient client
+  return res

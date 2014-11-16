@@ -12,6 +12,7 @@
     "purescript-arrays"               : "*",
     "purescript-either"               : "*",
     "purescript-foreign"              : "*",
-    "purescript-foldable-traversable" : "*"
+    "purescript-foldable-traversable" : "*",
+    "purescript-transformers"         : "*"
   }
 }

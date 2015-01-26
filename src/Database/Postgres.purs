@@ -1,5 +1,6 @@
 module Database.Postgres where
 
+import Control.Alt
 import Control.Monad.Eff
 import Control.Monad.Cont.Trans
 import Control.Monad.Trans
@@ -7,8 +8,9 @@ import Data.Either
 import Data.Array
 import Data.Foreign
 import Data.Foreign.Class
+import Util (readSingularProperty)
 
-type Query = String
+newtype Query a = Query String
 
 foreign import data Client :: *
 
@@ -31,8 +33,9 @@ connect :: forall eff. ConnectionInfo -> DBEff eff Client
 connect ci = connectJS $ "postgres://" <> ci.user <> ":" <> ci.password <> "@" <> ci.host <> ":" <> show ci.port <> "/" <> ci.db
 
 runQuery :: forall row eff. (IsForeign row) =>
-            Query -> Client -> ([F row] -> DBEff eff Unit) -> DBEff eff Unit
-runQuery query client handleRows = runQueryRowsForeignRaw query client (map read >>> handleRows)
+            Query row -> Client -> ([F row] -> DBEff eff Unit) -> DBEff eff Unit
+runQuery (Query query) client handleRows = runQueryRowsForeignRaw query client (map deserialize >>> handleRows)
+  where deserialize foreignVal = read foreignVal <|> readSingularProperty foreignVal
 
 
 foreign import connectJS """
@@ -79,13 +82,16 @@ foreign import runQueryRowsForeignRaw """
           };
         };
   }
-  """ :: forall eff eff'. Query -> Client -> ([Foreign] -> eff') -> DBEff eff Unit
+  """ :: forall eff eff'. String -> Client -> ([Foreign] -> eff') -> DBEff eff Unit
 
 
 -- Continuation-based API. -----------------------------------------------------
 
-runQueryCont :: forall eff a. (IsForeign a) => Query -> Client -> ContT Unit (DBEff eff) [F a]
+runQueryCont :: forall eff a. (IsForeign a) => Query a -> Client -> ContT Unit (DBEff eff) [F a]
 runQueryCont query client = ContT $ runQuery query client
+
+runQueryCont_ :: forall eff. Query Unit -> Client -> ContT Unit (DBEff eff) [F Unit]
+runQueryCont_ query client = ContT $ runQuery query client
 
 withConnectionCont :: forall eff a. ConnectionInfo -> (Client -> ContT Unit (DBEff eff) a) -> ContT Unit (DBEff eff) a
 withConnectionCont connectionInfo dbProg = do
@@ -94,3 +100,7 @@ withConnectionCont connectionInfo dbProg = do
   res <- dbProg client
   lift $ endClient client
   return res
+
+-- needed for runQuery_
+instance unitIsForeign :: IsForeign Unit where
+  read _ = Right unit

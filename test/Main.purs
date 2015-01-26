@@ -36,12 +36,17 @@ connectionInfoTest =
 exampleUsingWithConnection :: forall eff. DBEff (trace :: Trace | eff) Unit
 exampleUsingWithConnection =
   runContT
-    (withConnection $ runQueryCont "select * from artist")
-    printArtists
-
+    (withConnection $ \c -> do
+      runQueryCont_ (Query "delete from artist") c
+      runQueryCont_ (Query "insert into artist values ('Led Zeppelin', 1968)") c
+      runQueryCont_ (Query "insert into artist values ('Deep Purple', 1968)") c
+      year <- runQueryCont (Query "insert into artist values ('Fairport Convention', 1967) returning year" :: Query Number) c
+      lift $ print (show year)
+      runQueryCont (Query "select * from artist" :: Query Artist) c
+    )
+    printRows
 
 withConnection = withConnectionCont connectionInfoTest
-
 
 -- An example showing some of the low-level functions. ------------------------
 
@@ -49,11 +54,11 @@ exampleLowLevel :: forall eff. DBEff (trace :: Trace | eff) Unit
 exampleLowLevel = do
   client <- connect connectionInfoTest
 
-  runQuery "select * from artist order by name asc" client printArtists
+  runQuery (Query "select * from artist order by name asc" :: Query Artist) client printRows
 
   -- run a final query and end the client
-  runQuery "select * from artist order by name desc" client $ \artists -> do
-    printArtists artists
+  runQuery (Query "select * from artist order by name desc" :: Query Artist) client $ \artists -> do
+    printRows artists
     endClient client
 
   -- connect and execute queries
@@ -61,8 +66,8 @@ exampleLowLevel = do
 
 --------------------------------------------------------------------------------
 
-printArtists :: forall eff. [F Artist] -> Eff (trace :: Trace | eff) Unit
-printArtists artists = trace $ "result:\n" <> foldMap stringify artists
+printRows :: forall a eff. (Show a) => [F a] -> Eff (trace :: Trace | eff) Unit
+printRows rows = trace $ "result:\n" <> foldMap stringify rows
   where stringify = show >>> flip (<>) "\n"
 
 instance artistShow :: Show Artist where

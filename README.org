@@ -1,4 +1,4 @@
-#+title: PureScript bindings for purescript-node-postgres
+#+title: PureScript bindings for node-postgres
 
 This is an initial experiment in providing bindings to the [[https://www.npmjs.org/package/pg][pg library]] ([[https://github.com/brianc/node-postgres][node-postgres]] on GitHub). It's currently in pre-alpha state. In fact, if a letter existed before alpha, I would have chosen that.
 
@@ -18,11 +18,11 @@ git clone https://github.com/epost/purescript-node-postgres
 cd purescript-node-postgres
 #+end_src
 
-Create a Postgres database with some example data and run the tests:
+Create a Postgres database and run the tests:
 
 #+begin_src bash
 psql --command="create database test"
-cat setup.sql | psql --username=testuser test
+cat schema.sql | psql --username=testuser test
 #+end_src
 
 * Building and running

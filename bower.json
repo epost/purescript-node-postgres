@@ -1,7 +1,9 @@
 {
   "name": "purescript-node-postgres",
   "version": "0.0.1",
-  "moduleType": ["node"],
+  "moduleType": [
+    "node"
+  ],
   "ignore": [
     "**/.*",
     "node_modules",
@@ -9,10 +11,11 @@
     "output"
   ],
   "dependencies": {
-    "purescript-arrays"               : "*",
-    "purescript-either"               : "*",
-    "purescript-foreign"              : "*",
-    "purescript-foldable-traversable" : "*",
-    "purescript-transformers"         : "*"
+    "purescript-arrays": "*",
+    "purescript-either": "*",
+    "purescript-foreign": "*",
+    "purescript-foldable-traversable": "*",
+    "purescript-transformers": "*",
+    "purescript-aff": "0.10.0"
   }
 }

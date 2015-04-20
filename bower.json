@@ -16,6 +16,7 @@
     "purescript-foreign": "*",
     "purescript-foldable-traversable": "*",
     "purescript-transformers": "*",
-    "purescript-aff": "0.10.0"
+    "purescript-aff": "0.10.0",
+    "purescript-integers": "0.1.0"
   }
 }

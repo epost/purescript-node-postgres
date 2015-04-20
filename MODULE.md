@@ -42,7 +42,15 @@ Makes a connection to the database
 #### `execute`
 
 ``` purescript
-execute :: forall eff a. Query a -> Client -> Aff (db :: DB | eff) Unit
+execute :: forall eff a. Query a -> [SqlValue] -> Client -> Aff (db :: DB | eff) Unit
+```
+
+Runs a query and returns nothing
+
+#### `execute_`
+
+``` purescript
+execute_ :: forall eff a. Query a -> Client -> Aff (db :: DB | eff) Unit
 ```
 
 Runs a query and returns nothing
@@ -50,26 +58,50 @@ Runs a query and returns nothing
 #### `query`
 
 ``` purescript
-query :: forall eff a. (IsForeign a) => Query a -> Client -> Aff (db :: DB | eff) [a]
+query :: forall eff a p. (IsForeign a) => Query a -> [SqlValue] -> Client -> Aff (db :: DB | eff) [F a]
 ```
 
 Runs a query and returns all results
 
+#### `query_`
+
+``` purescript
+query_ :: forall eff a. (IsForeign a) => Query a -> Client -> Aff (db :: DB | eff) [a]
+```
+
+Just like `query` but does not make any param replacement
+
 #### `queryOne`
 
 ``` purescript
-queryOne :: forall eff a. (IsForeign a) => Query a -> Client -> Aff (db :: DB | eff) (Maybe a)
+queryOne :: forall eff a. (IsForeign a) => Query a -> [SqlValue] -> Client -> Aff (db :: DB | eff) (Maybe a)
 ```
 
 Runs a query and returns the first row, if any
 
+#### `queryOne_`
+
+``` purescript
+queryOne_ :: forall eff a. (IsForeign a) => Query a -> Client -> Aff (db :: DB | eff) (Maybe a)
+```
+
+Just like `queryOne` but does not make any param replacement
+
 #### `queryValue`
 
 ``` purescript
-queryValue :: forall eff a. (IsForeign a) => Query a -> Client -> Aff (db :: DB | eff) (Maybe a)
+queryValue :: forall eff a. (IsForeign a) => Query a -> [SqlValue] -> Client -> Aff (db :: DB | eff) (Maybe a)
 ```
 
 Runs a query and returns a single value, if any
+
+#### `queryValue_`
+
+``` purescript
+queryValue_ :: forall eff a. (IsForeign a) => Query a -> Client -> Aff (db :: DB | eff) (Maybe a)
+```
+
+Just like `queryValue` but does not make any param replacement
 
 #### `withConnection`
 
@@ -79,6 +111,42 @@ withConnection :: forall eff a. ConnectionInfo -> (Client -> Aff (db :: DB | eff
 
 Connects to the database, calls the provided function with the client
 and returns the results.
+
+#### `SqlValue`
+
+``` purescript
+data SqlValue :: *
+```
+
+
+#### `IsSqlValue`
+
+``` purescript
+class IsSqlValue a where
+  toSql :: a -> SqlValue
+```
+
+
+#### `isSqlValueString`
+
+``` purescript
+instance isSqlValueString :: IsSqlValue String
+```
+
+
+#### `isSqlValueNumber`
+
+``` purescript
+instance isSqlValueNumber :: IsSqlValue Number
+```
+
+
+#### `isSqlValueInt`
+
+``` purescript
+instance isSqlValueInt :: IsSqlValue Int
+```
+
 
 #### `end`
 

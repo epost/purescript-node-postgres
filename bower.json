@@ -11,12 +11,12 @@
     "output"
   ],
   "dependencies": {
-    "purescript-arrays": "*",
-    "purescript-either": "*",
-    "purescript-foreign": "*",
-    "purescript-foldable-traversable": "*",
-    "purescript-transformers": "*",
-    "purescript-aff": "0.10.0",
-    "purescript-integers": "0.1.0"
+    "purescript-arrays": "~0.3.7",
+    "purescript-either": "~0.1.8",
+    "purescript-foreign": "~0.4.2",
+    "purescript-foldable-traversable": "~0.3.1",
+    "purescript-transformers": "~0.5.5",
+    "purescript-aff": "~0.10.1",
+    "purescript-integers": "~0.1.0"
   }
 }

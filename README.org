@@ -33,3 +33,7 @@ Let's run some tests:
 pulp install
 pulp test
 #+end_src
+
+* Documentation
+
+See [[file:./MODULE.md][Module documentation]].

@@ -1,9 +1,12 @@
 {
   "name": "purescript-node-postgres",
-  "version": "0.0.1",
-  "moduleType": [
-    "node"
+  "version": "0.1.0",
+  "moduleType": ["node"],
+  "authors": [
+    { "name": "Erik Post", "email": "erik@shinsetsu.nl", "homepage": "http://www.shinsetsu.nl"  },
+    { "name": "Antti Holvikari" }
   ],
+  "license": "MIT",
   "ignore": [
     "**/.*",
     "node_modules",

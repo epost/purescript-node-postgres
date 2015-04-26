@@ -3,9 +3,6 @@ module Database.Postgres
   , Client()
   , DB()
   , ConnectionInfo()
-  , SqlValue()
-  , IsSqlValue
-  , toSql
   , connect
   , end
   , execute, execute_
@@ -23,12 +20,13 @@ import Data.Array
 import Data.Foreign
 import Data.Foreign.Class
 import Data.Maybe
-import Data.Int
 import Control.Monad.Aff
 import Control.Monad.Eff.Class
 import Control.Monad.Eff.Exception(Error(), error)
 import Control.Monad.Error.Class (throwError)
 import Data.Traversable (sequence)
+
+import Database.Postgres.SqlValue
 
 newtype Query a = Query String
 
@@ -122,26 +120,6 @@ finally a sequel = do
   res <- attempt a
   sequel
   either throwError pure res
-
-foreign import data SqlValue :: *
-
-foreign import unsafeToSqlValue """
-  function unsafeToSqlValue(x) {
-    return x;
-  }
-  """ :: forall a. a -> SqlValue
-
-class IsSqlValue a where
-  toSql :: a -> SqlValue
-
-instance isSqlValueString :: IsSqlValue String where
-  toSql = unsafeToSqlValue
-
-instance isSqlValueNumber :: IsSqlValue Number where
-  toSql = unsafeToSqlValue
-
-instance isSqlValueInt :: IsSqlValue Int where
-  toSql = unsafeToSqlValue <<< toNumber
 
 
 foreign import connect' """

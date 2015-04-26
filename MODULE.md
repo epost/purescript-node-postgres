@@ -37,7 +37,7 @@ type ConnectionInfo = { password :: String, user :: String, port :: Number, db :
 connect :: forall eff. ConnectionInfo -> Aff (db :: DB | eff) Client
 ```
 
-Makes a connection to the database
+Makes a connection to the database.
 
 #### `execute`
 
@@ -45,7 +45,7 @@ Makes a connection to the database
 execute :: forall eff a. Query a -> [SqlValue] -> Client -> Aff (db :: DB | eff) Unit
 ```
 
-Runs a query and returns nothing
+Runs a query and returns nothing.
 
 #### `execute_`
 
@@ -61,7 +61,7 @@ Runs a query and returns nothing
 query :: forall eff a p. (IsForeign a) => Query a -> [SqlValue] -> Client -> Aff (db :: DB | eff) [F a]
 ```
 
-Runs a query and returns all results
+Runs a query and returns all results.
 
 #### `query_`
 
@@ -93,7 +93,7 @@ Just like `queryOne` but does not make any param replacement
 queryValue :: forall eff a. (IsForeign a) => Query a -> [SqlValue] -> Client -> Aff (db :: DB | eff) (Maybe a)
 ```
 
-Runs a query and returns a single value, if any
+Runs a query and returns a single value, if any.
 
 #### `queryValue_`
 
@@ -111,6 +111,16 @@ withConnection :: forall eff a. ConnectionInfo -> (Client -> Aff (db :: DB | eff
 
 Connects to the database, calls the provided function with the client
 and returns the results.
+
+#### `end`
+
+``` purescript
+end :: forall eff. Client -> Eff (db :: DB | eff) Unit
+```
+
+
+
+## Module Database.Postgres.SqlValue
 
 #### `SqlValue`
 
@@ -148,10 +158,10 @@ instance isSqlValueInt :: IsSqlValue Int
 ```
 
 
-#### `end`
+#### `isSqlValueMaybe`
 
 ``` purescript
-end :: forall eff. Client -> Eff (db :: DB | eff) Unit
+instance isSqlValueMaybe :: (IsSqlValue a) => IsSqlValue (Maybe a)
 ```
 
 

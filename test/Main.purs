@@ -1,6 +1,7 @@
 module Test.Main where
 
 import Database.Postgres
+import Database.Postgres.SqlValue
 import Debug.Trace
 import Control.Monad.Eff
 import Control.Monad.Eff.Class

@@ -3,6 +3,8 @@ module Database.Postgres
   , Client()
   , DB()
   , ConnectionInfo()
+  , ConnectionString()
+  , mkConnectionString
   , connect
   , end
   , execute, execute_
@@ -34,6 +36,8 @@ foreign import data Client :: *
 
 foreign import data DB :: !
 
+type ConnectionString = String
+
 type ConnectionInfo =
   { host :: String
   , db :: String
@@ -42,15 +46,18 @@ type ConnectionInfo =
   , password :: String
   }
 
--- | Makes a connection to the database.
-connect :: forall eff. ConnectionInfo -> Aff (db :: DB | eff) Client
-connect ci = connect'
-  $ "postgres://"
+mkConnectionString :: ConnectionInfo -> ConnectionString
+mkConnectionString ci =
+    "postgres://"
   <> ci.user <> ":"
   <> ci.password <> "@"
   <> ci.host <> ":"
   <> show ci.port <> "/"
   <> ci.db
+
+-- | Makes a connection to the database.
+connect :: forall eff. ConnectionInfo -> Aff (db :: DB | eff) Client
+connect = connect' <<< mkConnectionString
 
 -- | Runs a query and returns nothing.
 execute :: forall eff a. Query a -> [SqlValue] -> Client -> Aff (db :: DB | eff) Unit

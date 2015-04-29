@@ -17,6 +17,7 @@ import Data.Foreign.Index
 import Control.Monad.Aff
 
 main = runAff (trace <<< show) (const $ trace "All ok") $ do
+  liftEff <<< trace $ "connecting to " <> mkConnectionString connectionInfo <> "..."
   exampleUsingWithConnection
   exampleLowLevel
 

@@ -51,10 +51,10 @@ exampleUsingWithConnection = withConnection connectionInfo $ \c -> do
 
 exampleLowLevel :: forall eff. Aff (trace :: Trace, db :: DB | eff) Unit
 exampleLowLevel = do
-  client <- connect connectionInfo
-  artists <- query_ (Query "select * from artist order by name desc" :: Query Artist) client
+  con <- connect connectionInfo
+  artists <- query_ (Query "select * from artist order by name desc" :: Query Artist) con
   liftEff $ printRows artists
-  liftEff $ end client
+  liftEff $ end con
 
 exampleError :: forall eff. Aff (db :: DB | eff) (Maybe Artist)
 exampleError = withConnection connectionInfo $ \c -> do

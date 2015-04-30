@@ -1,6 +1,6 @@
 module Database.Postgres
   ( Query(..)
-  , Client()
+  , Connection()
   , DB()
   , ConnectionInfo()
   , ConnectionString()
@@ -32,7 +32,7 @@ import Database.Postgres.SqlValue
 
 newtype Query a = Query String
 
-foreign import data Client :: *
+foreign import data Connection :: *
 
 foreign import data DB :: !
 
@@ -56,68 +56,68 @@ mkConnectionString ci =
   <> ci.db
 
 -- | Makes a connection to the database.
-connect :: forall eff. ConnectionInfo -> Aff (db :: DB | eff) Client
+connect :: forall eff. ConnectionInfo -> Aff (db :: DB | eff) Connection
 connect = connect' <<< mkConnectionString
 
 -- | Runs a query and returns nothing.
-execute :: forall eff a. Query a -> [SqlValue] -> Client -> Aff (db :: DB | eff) Unit
-execute (Query sql) params client = void $ runQuery sql params client
+execute :: forall eff a. Query a -> [SqlValue] -> Connection -> Aff (db :: DB | eff) Unit
+execute (Query sql) params con = void $ runQuery sql params con
 
 -- | Runs a query and returns nothing
-execute_ :: forall eff a. Query a -> Client -> Aff (db :: DB | eff) Unit
-execute_ (Query sql) client = void $ runQuery_ sql client
+execute_ :: forall eff a. Query a -> Connection -> Aff (db :: DB | eff) Unit
+execute_ (Query sql) con = void $ runQuery_ sql con
 
 -- | Runs a query and returns all results.
 query :: forall eff a
   . (IsForeign a)
-  => Query a -> [SqlValue] -> Client -> Aff (db :: DB | eff) [F a]
-query (Query sql) params client = do
-  rows <- runQuery sql params client
+  => Query a -> [SqlValue] -> Connection -> Aff (db :: DB | eff) [F a]
+query (Query sql) params con = do
+  rows <- runQuery sql params con
   pure $ read <$> rows
 
 -- | Just like `query` but does not make any param replacement
-query_ :: forall eff a. (IsForeign a) => Query a -> Client -> Aff (db :: DB | eff) [a]
-query_ (Query sql) client = do
-  rows <- runQuery_ sql client
+query_ :: forall eff a. (IsForeign a) => Query a -> Connection -> Aff (db :: DB | eff) [a]
+query_ (Query sql) con = do
+  rows <- runQuery_ sql con
   either liftError pure (sequence $ read <$> rows)
 
 -- | Runs a query and returns the first row, if any
 queryOne :: forall eff a
   . (IsForeign a)
-  => Query a -> [SqlValue] -> Client -> Aff (db :: DB | eff) (Maybe a)
-queryOne (Query sql) params client = do
-  rows <- runQuery sql params client
+  => Query a -> [SqlValue] -> Connection -> Aff (db :: DB | eff) (Maybe a)
+queryOne (Query sql) params con = do
+  rows <- runQuery sql params con
   maybe (pure Nothing) (either liftError (pure <<< Just)) $ read <$> (rows !! 0)
 
 -- | Just like `queryOne` but does not make any param replacement
-queryOne_ :: forall eff a. (IsForeign a) => Query a -> Client -> Aff (db :: DB | eff) (Maybe a)
-queryOne_ (Query sql) client = do
-  rows <- runQuery_ sql client
+queryOne_ :: forall eff a. (IsForeign a) => Query a -> Connection -> Aff (db :: DB | eff) (Maybe a)
+queryOne_ (Query sql) con = do
+  rows <- runQuery_ sql con
   maybe (pure Nothing) (either liftError (pure <<< Just)) $ read <$> (rows !! 0)
 
 -- | Runs a query and returns a single value, if any.
 queryValue :: forall eff a
   . (IsForeign a)
-  => Query a -> [SqlValue] -> Client -> Aff (db :: DB | eff) (Maybe a)
-queryValue (Query sql) params client = do
-  val <- runQueryValue sql params client
+  => Query a -> [SqlValue] -> Connection -> Aff (db :: DB | eff) (Maybe a)
+queryValue (Query sql) params con = do
+  val <- runQueryValue sql params con
   pure $ either (const Nothing) Just (read val)
 
 -- | Just like `queryValue` but does not make any param replacement
-queryValue_ :: forall eff a. (IsForeign a) => Query a -> Client -> Aff (db :: DB | eff) (Maybe a)
-queryValue_ (Query sql) client = do
-  val <- runQueryValue_ sql client
+queryValue_ :: forall eff a. (IsForeign a) => Query a -> Connection -> Aff (db :: DB | eff) (Maybe a)
+queryValue_ (Query sql) con = do
+  val <- runQueryValue_ sql con
   either liftError (pure <<< Just) $ read val
 
--- | Connects to the database, calls the provided function with the client
+-- | Connects to the database, calls the provided function with the connection
 -- | and returns the results.
 withConnection :: forall eff a
   . ConnectionInfo
-  -> (Client -> Aff (db :: DB | eff) a)
+  -> (Connection -> Aff (db :: DB | eff) a)
   -> Aff (db :: DB | eff) a
 withConnection info p = do
-  client <- connect info
-  finally (p client) $ liftEff (end client)
+  con <- connect info
+  finally (p con) $ liftEff (end con)
 
 liftError :: forall e a. ForeignError -> Aff e a
 liftError err = throwError $ error (show err)
@@ -142,7 +142,7 @@ foreign import connect' """
       });
     };
   }
-  """ :: forall eff. ConnectionString -> Aff (db :: DB | eff) Client
+  """ :: forall eff. ConnectionString -> Aff (db :: DB | eff) Connection
 
 foreign import runQuery_ """
   function runQuery_(queryStr) {
@@ -158,7 +158,7 @@ foreign import runQuery_ """
       };
     };
   }
-  """ :: forall eff. String -> Client -> Aff (db :: DB | eff) [Foreign]
+  """ :: forall eff. String -> Connection -> Aff (db :: DB | eff) [Foreign]
 
 foreign import runQuery """
   function runQuery(queryStr) {
@@ -173,7 +173,7 @@ foreign import runQuery """
       };
     }
   }
-  """ :: forall eff. String -> [SqlValue] -> Client -> Aff (db :: DB | eff) [Foreign]
+  """ :: forall eff. String -> [SqlValue] -> Connection -> Aff (db :: DB | eff) [Foreign]
 
 foreign import runQueryValue_ """
   function runQueryValue_(queryStr) {
@@ -186,7 +186,7 @@ foreign import runQueryValue_ """
       };
     };
   }
-  """ :: forall eff. String -> Client -> Aff (db :: DB | eff) Foreign
+  """ :: forall eff. String -> Connection -> Aff (db :: DB | eff) Foreign
 
 foreign import runQueryValue """
   function runQueryValue(queryStr) {
@@ -201,7 +201,7 @@ foreign import runQueryValue """
       };
     }
   }
-  """ :: forall eff. String -> [SqlValue] -> Client -> Aff (db :: DB | eff) Foreign
+  """ :: forall eff. String -> [SqlValue] -> Connection -> Aff (db :: DB | eff) Foreign
 
 foreign import end """
   function end(con) {
@@ -209,4 +209,4 @@ foreign import end """
       con.end();
     };
   }
-  """ :: forall eff. Client -> Eff (db :: DB | eff) Unit
+  """ :: forall eff. Connection -> Eff (db :: DB | eff) Unit

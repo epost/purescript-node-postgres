@@ -7,6 +7,7 @@
     { "name": "Antti Holvikari" }
   ],
   "license": "MIT",
+  "keywords": ["purescript", "database", "sql", "postgres"],
   "ignore": [
     "**/.*",
     "node_modules",

@@ -68,7 +68,7 @@ execute_ :: forall eff a. Query a -> Client -> Aff (db :: DB | eff) Unit
 execute_ (Query sql) client = void $ runQuery_ sql client
 
 -- | Runs a query and returns all results.
-query :: forall eff a p
+query :: forall eff a
   . (IsForeign a)
   => Query a -> [SqlValue] -> Client -> Aff (db :: DB | eff) [F a]
 query (Query sql) params client = do
@@ -144,7 +144,7 @@ foreign import connect' """
       return client;
     }
   }
-  """ :: forall eff. String -> Aff (db :: DB | eff) Client
+  """ :: forall eff. ConnectionString -> Aff (db :: DB | eff) Client
 
 foreign import runQuery_ """
   function runQuery_(queryStr) {

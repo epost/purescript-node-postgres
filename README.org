@@ -34,6 +34,6 @@ pulp install
 pulp test
 #+end_src
 
-* Documentation
+* Usage
 
 See [[file:./MODULE.md][Module documentation]].

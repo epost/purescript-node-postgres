@@ -132,25 +132,23 @@ finally a sequel = do
 foreign import connect' """
   function connect$prime(conString) {
     return function(success, error) {
-      var pg = require('pg');
-      var client = new pg.Client(conString);
-      client.connect(function(err) {
+      var anyDB = require('any-db');
+      anyDB.createConnection(conString, function(err, con) {
         if (err) {
           error(err);
         } else {
-          success(client);
+          success(con);
         }
-      })
-      return client;
-    }
+      });
+    };
   }
   """ :: forall eff. ConnectionString -> Aff (db :: DB | eff) Client
 
 foreign import runQuery_ """
   function runQuery_(queryStr) {
-    return function(client) {
+    return function(con) {
       return function(success, error) {
-        client.query(queryStr, function(err, result) {
+        con.query(queryStr, function(err, result) {
           if (err) {
             error(err);
           } else {
@@ -165,9 +163,9 @@ foreign import runQuery_ """
 foreign import runQuery """
   function runQuery(queryStr) {
     return function(params) {
-      return function(client) {
+      return function(con) {
         return function(success, error) {
-          client.query(queryStr, params, function(err, result) {
+          con.query(queryStr, params, function(err, result) {
             if (err) return error(err);
             success(result.rows);
           })
@@ -179,9 +177,9 @@ foreign import runQuery """
 
 foreign import runQueryValue_ """
   function runQueryValue_(queryStr) {
-    return function(client) {
+    return function(con) {
       return function(success, error) {
-        client.query(queryStr, function(err, result) {
+        con.query(queryStr, function(err, result) {
           if (err) return error(err);
           success(result.rows.length > 0 ? result.rows[0][result.fields[0].name] : undefined);
         })
@@ -193,9 +191,9 @@ foreign import runQueryValue_ """
 foreign import runQueryValue """
   function runQueryValue(queryStr) {
     return function(params) {
-      return function(client) {
+      return function(con) {
         return function(success, error) {
-          client.query(queryStr, params, function(err, result) {
+          con.query(queryStr, params, function(err, result) {
             if (err) return error(err);
             success(result.rows.length > 0 ? result.rows[0][result.fields[0].name] : undefined);
           })
@@ -206,9 +204,9 @@ foreign import runQueryValue """
   """ :: forall eff. String -> [SqlValue] -> Client -> Aff (db :: DB | eff) Foreign
 
 foreign import end """
-  function end(client) {
+  function end(con) {
     return function() {
-      client.end();
+      con.end();
     };
   }
   """ :: forall eff. Client -> Eff (db :: DB | eff) Unit

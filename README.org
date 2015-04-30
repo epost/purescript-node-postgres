@@ -4,11 +4,11 @@ This is an initial experiment in providing bindings to the [[https://www.npmjs.o
 
 * Installation
 
-I'll assume you have [[http://www.purescript.org/][PureScript]] and [[http://www.postgresql.org/][PostgreSQL]] installed. You'll also need [[https://github.com/bodil/pulp][purescript-pulp]] and [[https://www.npmjs.org/package/pg][pg]]:
+I'll assume you have [[http://www.purescript.org/][PureScript]] and [[http://www.postgresql.org/][PostgreSQL]] installed. You'll also need [[https://github.com/bodil/pulp][purescript-pulp]] and the postgres version of [[https://github.com/grncdr/node-any-db][node-any-db]]:
 
 #+begin_src bash
-npm install pg
-npm install -g pulp
+npm install any-db-postgres
+npm install pulp
 #+end_src
 
 Clone the project:

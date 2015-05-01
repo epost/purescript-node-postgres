@@ -119,6 +119,13 @@ end :: forall eff. Client -> Eff (db :: DB | eff) Unit
 ```
 
 
+#### `disconnect`
+
+``` purescript
+disconnect :: forall eff. Eff (db :: DB | eff) Unit
+```
+
+
 
 ## Module Database.Postgres.SqlValue
 

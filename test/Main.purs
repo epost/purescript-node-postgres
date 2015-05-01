@@ -26,6 +26,8 @@ main = runAff (trace <<< show) (const $ trace "All ok") $ do
 
   exampleQueries
 
+  liftEff $ disconnect
+
 data Artist = Artist
   { name :: String
   , year :: Number

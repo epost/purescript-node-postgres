@@ -24,10 +24,24 @@ data DB :: !
 ```
 
 
+#### `ConnectionString`
+
+``` purescript
+type ConnectionString = String
+```
+
+
 #### `ConnectionInfo`
 
 ``` purescript
 type ConnectionInfo = { password :: String, user :: String, port :: Number, db :: String, host :: String }
+```
+
+
+#### `mkConnectionString`
+
+``` purescript
+mkConnectionString :: ConnectionInfo -> ConnectionString
 ```
 
 
@@ -58,7 +72,7 @@ Runs a query and returns nothing
 #### `query`
 
 ``` purescript
-query :: forall eff a p. (IsForeign a) => Query a -> [SqlValue] -> Client -> Aff (db :: DB | eff) [F a]
+query :: forall eff a p. (IsForeign a) => Query a -> [SqlValue] -> Client -> Aff (db :: DB | eff) [a]
 ```
 
 Runs a query and returns all results.

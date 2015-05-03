@@ -135,6 +135,25 @@ withClient :: forall eff a. ConnectionInfo -> (Client -> Aff (db :: DB | eff) a)
 Takes a Client from the connection pool, runs the given function with
 the client and returns the results.
 
+#### `withTransaction`
+
+``` purescript
+withTransaction :: forall eff a. (Client -> Aff (db :: DB | eff) a) -> Client -> Aff (db :: DB | eff) a
+```
+
+Runs an asynchronous action in a database transaction. The transaction
+will be rolled back if the computation fails and committed otherwise.
+
+Here the first insert will be rolled back:
+
+```purescript
+moneyTransfer :: forall e. (Client -> Aff e Unit) -> Client -> Aff e Unit
+moneyTransfer = withTransaction $ \c -> do
+  execute_ (Query "insert into accounts ...") c
+  throwError $ error "Something went wrong"
+  execute_ (Query "insert into accounts ...") c
+```
+
 #### `end`
 
 ``` purescript

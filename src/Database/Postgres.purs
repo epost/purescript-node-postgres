@@ -70,10 +70,10 @@ execute_ (Query sql) client = void $ runQuery_ sql client
 -- | Runs a query and returns all results.
 query :: forall eff a p
   . (IsForeign a)
-  => Query a -> [SqlValue] -> Client -> Aff (db :: DB | eff) [F a]
+  => Query a -> [SqlValue] -> Client -> Aff (db :: DB | eff) [a]
 query (Query sql) params client = do
   rows <- runQuery sql params client
-  pure $ read <$> rows
+  either liftError pure (sequence $ read <$> rows)
 
 -- | Just like `query` but does not make any param replacement
 query_ :: forall eff a. (IsForeign a) => Query a -> Client -> Aff (db :: DB | eff) [a]

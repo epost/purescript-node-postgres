@@ -126,10 +126,26 @@ withConnection :: forall eff a. ConnectionInfo -> (Client -> Aff (db :: DB | eff
 Connects to the database, calls the provided function with the client
 and returns the results.
 
+#### `withClient`
+
+``` purescript
+withClient :: forall eff a. ConnectionInfo -> (Client -> Aff (db :: DB | eff) a) -> Aff (db :: DB | eff) a
+```
+
+Takes a Client from the connection pool, runs the given function with
+the client and returns the results.
+
 #### `end`
 
 ``` purescript
 end :: forall eff. Client -> Eff (db :: DB | eff) Unit
+```
+
+
+#### `disconnect`
+
+``` purescript
+disconnect :: forall eff. Eff (db :: DB | eff) Unit
 ```
 
 

@@ -26,6 +26,8 @@ main = runAff (trace <<< show) (const $ trace "All ok") $ do
 
   exampleQueries
 
+  liftEff $ disconnect
+
 data Artist = Artist
   { name :: String
   , year :: Number
@@ -63,7 +65,7 @@ exampleError = withConnection connectionInfo $ \c -> do
   queryOne_ (Query "select year from artist") c
 
 exampleQueries :: forall eff. Aff (trace :: Trace, db :: DB | eff) Unit
-exampleQueries = withConnection connectionInfo $ \c -> do
+exampleQueries = withClient connectionInfo $ \c -> do
   liftEff $ trace "Example queries with params:"
   execute_ (Query "delete from artist") c
   execute_ (Query "insert into artist values ('Led Zeppelin', 1968)") c

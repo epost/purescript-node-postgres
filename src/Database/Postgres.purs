@@ -6,18 +6,21 @@ module Database.Postgres
   , ConnectionString()
   , mkConnectionString
   , connect
+  , disconnect
   , end
   , execute, execute_
   , query, query_
   , queryValue, queryValue_
   , queryOne, queryOne_
   , withConnection
+  , withClient
   ) where
 
 import Control.Alt
 import Control.Monad.Eff
 import Control.Monad.Trans
 import Data.Either
+import Data.Function (Fn2(), runFn2)
 import Data.Array
 import Data.Foreign
 import Data.Foreign.Class
@@ -119,6 +122,14 @@ withConnection info p = do
   client <- connect info
   finally (p client) $ liftEff (end client)
 
+-- | Takes a Client from the connection pool, runs the given function with
+-- | the client and returns the results.
+withClient :: forall eff a
+  . ConnectionInfo
+  -> (Client -> Aff (db :: DB | eff) a)
+  -> Aff (db :: DB | eff) a
+withClient info p = runFn2 _withClient (mkConnectionString info) p
+
 liftError :: forall e a. ForeignError -> Aff e a
 liftError err = throwError $ error (show err)
 
@@ -145,6 +156,32 @@ foreign import connect' """
     }
   }
   """ :: forall eff. String -> Aff (db :: DB | eff) Client
+
+foreign import _withClient
+  """
+  function _withClient(conString, cb) {
+    return function(success, error) {
+      var pg = require('pg');
+      pg.connect(conString, function(err, client, done) {
+        if (err) {
+          done(true);
+          return error(err);
+        }
+        cb(client)(function(v) {
+          done();
+          success(v);
+        }, function(err) {
+          done();
+          error(err);
+        })
+      });
+    };
+  }
+  """ :: forall eff a.
+      Fn2
+      ConnectionString
+      (Client -> Aff (db :: DB | eff) a)
+      (Aff (db :: DB | eff) a)
 
 foreign import runQuery_ """
   function runQuery_(queryStr) {
@@ -212,3 +249,11 @@ foreign import end """
     };
   }
   """ :: forall eff. Client -> Eff (db :: DB | eff) Unit
+
+foreign import disconnect
+  """
+  function disconnect() {
+    var pg = require('pg');
+    pg.end();
+  }
+  """ :: forall eff. Eff (db :: DB | eff) Unit

@@ -14,7 +14,6 @@ module Database.Postgres
   , queryOne, queryOne_
   , withConnection
   , withClient
-  , withTransaction
   ) where
 
 import Control.Alt
@@ -131,27 +130,6 @@ withClient :: forall eff a
   -> (Client -> Aff (db :: DB | eff) a)
   -> Aff (db :: DB | eff) a
 withClient info p = runFn2 _withClient (mkConnectionString info) p
-
--- | Runs an asynchronous action in a database transaction. The transaction
--- | will be rolled back if the computation fails and committed otherwise.
--- |
--- | Here the first insert will be rolled back:
--- |
--- | ```purescript
--- | moneyTransfer :: forall e. (Client -> Aff e Unit) -> Client -> Aff e Unit
--- | moneyTransfer = withTransaction $ \c -> do
--- |   execute_ (Query "insert into accounts ...") c
--- |   throwError $ error "Something went wrong"
--- |   execute_ (Query "insert into accounts ...") c
--- | ```
-withTransaction :: forall eff a. (Client -> Aff (db :: DB | eff) a) -> Client -> Aff (db :: DB | eff) a
-withTransaction act client = do
-  execute_ (Query "BEGIN TRANSACTION") client
-  res <- attempt (act client)
-  either rollback commit res
-    where
-    rollback err = execute_ (Query "ROLLBACK") client *> throwError err
-    commit v = execute_ (Query "COMMIT") client *> pure v
 
 liftError :: forall e a. ForeignError -> Aff e a
 liftError err = throwError $ error (show err)

@@ -13,6 +13,7 @@ module Database.Postgres
   , queryValue, queryValue_
   , queryOne, queryOne_
   , withConnection
+  , withClient
   ) where
 
 import Control.Alt
@@ -117,10 +118,27 @@ withConnection :: forall eff a
   . ConnectionInfo
   -> (Client -> Aff (db :: DB | eff) a)
   -> Aff (db :: DB | eff) a
-withConnection info p = runFn2 _withConnection (mkConnectionString info) p
+withConnection info p = do
+  client <- connect info
+  finally (p client) $ liftEff (end client)
+
+-- | Takes a Client from the connection pool, runs the given function with
+-- | the client and returns the results.
+withClient :: forall eff a
+  . ConnectionInfo
+  -> (Client -> Aff (db :: DB | eff) a)
+  -> Aff (db :: DB | eff) a
+withClient info p = runFn2 _withClient (mkConnectionString info) p
 
 liftError :: forall e a. ForeignError -> Aff e a
 liftError err = throwError $ error (show err)
+
+finally :: forall eff a. Aff eff a -> Aff eff Unit -> Aff eff a
+finally a sequel = do
+  res <- attempt a
+  sequel
+  either throwError pure res
+
 
 foreign import connect' """
   function connect$prime(conString) {
@@ -139,9 +157,9 @@ foreign import connect' """
   }
   """ :: forall eff. String -> Aff (db :: DB | eff) Client
 
-foreign import _withConnection
+foreign import _withClient
   """
-  function _withConnection(conString, cb) {
+  function _withClient(conString, cb) {
     return function(success, error) {
       var pg = require('pg');
       pg.connect(conString, function(err, client, done) {

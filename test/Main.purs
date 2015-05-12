@@ -1,12 +1,12 @@
 module Test.Main where
 
-import Database.Postgres
-import Database.Postgres.SqlValue
 import Debug.Trace
 import Control.Monad.Eff
 import Control.Monad.Eff.Class
 import Control.Monad.Cont.Trans
 import Control.Monad.Trans
+import Control.Monad.Error.Class (throwError)
+import Control.Monad.Eff.Exception (error)
 import Data.Array
 import Data.Foldable
 import Data.Either
@@ -15,6 +15,10 @@ import Data.Foreign
 import Data.Foreign.Class
 import Data.Foreign.Index
 import Control.Monad.Aff
+
+import Database.Postgres
+import Database.Postgres.SqlValue
+import Database.Postgres.Transaction
 
 main = runAff (trace <<< show) (const $ trace "All ok") $ do
   liftEff <<< trace $ "connecting to " <> mkConnectionString connectionInfo <> "..."
@@ -25,6 +29,8 @@ main = runAff (trace <<< show) (const $ trace "All ok") $ do
   liftEff $ either (const $ trace "got an error, like we should") (const $ trace "FAIL") res
 
   exampleQueries
+
+  exampleTransaction
 
   liftEff $ disconnect
 
@@ -73,6 +79,17 @@ exampleQueries = withClient connectionInfo $ \c -> do
   execute_ (Query "insert into artist values ('Toto', 1977)") c
   artists <- query (Query "select * from artist where name = $1" :: Query Artist) [toSql "Toto"] c
   liftEff $ printRows artists
+
+exampleTransaction :: forall eff. Aff (db :: DB | eff) Unit
+exampleTransaction = withConnection connectionInfo $ \c -> do
+  execute_ (Query "delete from artist") c
+  apathize $ tryInsert c
+  one <- queryOne_ (Query "select * from artist" :: Query Artist) c
+  liftEff $ trace $ show one
+    where
+    tryInsert = withTransaction $ \c -> do
+      execute_ (Query "insert into artist values ('Not there', 1999)") c
+      throwError $ error "fail"
 
 printRows :: forall a eff. (Show a) => [a] -> Eff (trace :: Trace | eff) Unit
 printRows rows = trace $ "result:\n" <> foldMap stringify rows

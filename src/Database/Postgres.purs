@@ -17,6 +17,7 @@ module Database.Postgres
   ) where
 
 import Control.Alt
+import Control.Apply ((*>))
 import Control.Monad.Eff
 import Control.Monad.Trans
 import Data.Either
@@ -28,7 +29,7 @@ import Data.Maybe
 import Control.Monad.Aff
 import Control.Monad.Eff.Class
 import Control.Monad.Eff.Exception(Error(), error)
-import Control.Monad.Error.Class (throwError)
+import Control.Monad.Error.Class (throwError, catchError)
 import Data.Traversable (sequence)
 
 import Database.Postgres.SqlValue

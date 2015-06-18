@@ -1,6 +1,9 @@
 module Test.Main where
 
-import Debug.Trace
+import Prelude
+import qualified Control.Monad.Eff.Console as C
+import Control.Monad.Aff.Console (log, print)
+
 import Control.Monad.Eff
 import Control.Monad.Eff.Class
 import Control.Monad.Cont.Trans
@@ -13,20 +16,19 @@ import Data.Either
 import Data.Maybe
 import Data.Foreign
 import Data.Foreign.Class
-import Data.Foreign.Index
 import Control.Monad.Aff
 
 import Database.Postgres
 import Database.Postgres.SqlValue
 import Database.Postgres.Transaction
 
-main = runAff (trace <<< show) (const $ trace "All ok") $ do
-  liftEff <<< trace $ "connecting to " <> mkConnectionString connectionInfo <> "..."
+main = runAff C.print (const $ C.log "All ok") $ do
+  print $ "connecting to " <> mkConnectionString connectionInfo <> "..."
   exampleUsingWithConnection
   exampleLowLevel
 
   res <- attempt exampleError
-  liftEff $ either (const $ trace "got an error, like we should") (const $ trace "FAIL") res
+  either (const $ log "got an error, like we should") (const $ log "FAIL") res
 
   exampleQueries
 
@@ -47,21 +49,21 @@ connectionInfo =
   , password: "test"
   }
 
-exampleUsingWithConnection :: forall eff. Aff (trace :: Trace, db :: DB | eff) Unit
+exampleUsingWithConnection :: forall eff. Aff (console :: C.CONSOLE, db :: DB | eff) Unit
 exampleUsingWithConnection = withConnection connectionInfo $ \c -> do
   execute_ (Query "delete from artist") c
   execute_ (Query "insert into artist values ('Led Zeppelin', 1968)") c
   execute_ (Query "insert into artist values ('Deep Purple', 1968)") c
   year <- queryValue_ (Query "insert into artist values ('Fairport Convention', 1967) returning year" :: Query Number) c
-  liftEff $ print (show year)
+  print (show year)
   artists <- query_ (Query "select * from artist" :: Query Artist) c
-  liftEff $ printRows artists
+  printRows artists
 
-exampleLowLevel :: forall eff. Aff (trace :: Trace, db :: DB | eff) Unit
+exampleLowLevel :: forall eff. Aff (console :: C.CONSOLE, db :: DB | eff) Unit
 exampleLowLevel = do
   client <- connect connectionInfo
   artists <- query_ (Query "select * from artist order by name desc" :: Query Artist) client
-  liftEff $ printRows artists
+  printRows artists
   liftEff $ end client
 
 exampleError :: forall eff. Aff (db :: DB | eff) (Maybe Artist)
@@ -70,29 +72,29 @@ exampleError = withConnection connectionInfo $ \c -> do
   execute_ (Query "insert into artist values ('Led Zeppelin', 1968)") c
   queryOne_ (Query "select year from artist") c
 
-exampleQueries :: forall eff. Aff (trace :: Trace, db :: DB | eff) Unit
+exampleQueries :: forall eff. Aff (console :: C.CONSOLE, db :: DB | eff) Unit
 exampleQueries = withClient connectionInfo $ \c -> do
-  liftEff $ trace "Example queries with params:"
+  log "Example queries with params:"
   execute_ (Query "delete from artist") c
   execute_ (Query "insert into artist values ('Led Zeppelin', 1968)") c
   execute_ (Query "insert into artist values ('Deep Purple', 1968)") c
   execute_ (Query "insert into artist values ('Toto', 1977)") c
   artists <- query (Query "select * from artist where name = $1" :: Query Artist) [toSql "Toto"] c
-  liftEff $ printRows artists
+  printRows artists
 
-exampleTransaction :: forall eff. Aff (db :: DB | eff) Unit
+exampleTransaction :: forall eff. Aff (console :: C.CONSOLE, db :: DB | eff) Unit
 exampleTransaction = withConnection connectionInfo $ \c -> do
   execute_ (Query "delete from artist") c
   apathize $ tryInsert c
   one <- queryOne_ (Query "select * from artist" :: Query Artist) c
-  liftEff $ trace $ show one
+  void $ print one
     where
     tryInsert = withTransaction $ \c -> do
       execute_ (Query "insert into artist values ('Not there', 1999)") c
       throwError $ error "fail"
 
-printRows :: forall a eff. (Show a) => [a] -> Eff (trace :: Trace | eff) Unit
-printRows rows = trace $ "result:\n" <> foldMap stringify rows
+printRows :: forall a eff. (Show a) => Array a -> Aff (console :: C.CONSOLE | eff) Unit
+printRows rows = void $ log $ "result:\n" <> foldMap stringify rows
   where stringify = show >>> flip (<>) "\n"
 
 instance artistShow :: Show Artist where

@@ -4,6 +4,7 @@ module Database.Postgres.SqlValue
   , toSql
   ) where
 
+import Prelude ((<<<))
 import Data.Int
 import Data.Maybe
 
@@ -25,10 +26,6 @@ instance isSqlValueMaybe :: (IsSqlValue a) => IsSqlValue (Maybe a) where
   toSql Nothing = nullSqlValue
   toSql (Just x) = toSql x
 
-foreign import unsafeToSqlValue """
-  function unsafeToSqlValue(x) {
-    return x;
-  }
-  """ :: forall a. a -> SqlValue
+foreign import unsafeToSqlValue :: forall a. a -> SqlValue
 
-foreign import nullSqlValue "var nullSqlValue = null;" :: SqlValue
+foreign import nullSqlValue :: SqlValue

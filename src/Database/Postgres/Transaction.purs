@@ -1,5 +1,6 @@
 module Database.Postgres.Transaction where
 
+import Prelude
 import Control.Apply ((*>))
 import Control.Monad.Aff
 import Control.Monad.Error.Class (throwError)

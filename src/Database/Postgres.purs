@@ -16,6 +16,7 @@ module Database.Postgres
   , withClient
   ) where
 
+import Prelude
 import Control.Alt
 import Control.Apply ((*>))
 import Control.Monad.Eff
@@ -45,7 +46,7 @@ type ConnectionString = String
 type ConnectionInfo =
   { host :: String
   , db :: String
-  , port :: Number
+  , port :: Int
   , user :: String
   , password :: String
   }
@@ -64,7 +65,7 @@ connect :: forall eff. ConnectionInfo -> Aff (db :: DB | eff) Client
 connect = connect' <<< mkConnectionString
 
 -- | Runs a query and returns nothing.
-execute :: forall eff a. Query a -> [SqlValue] -> Client -> Aff (db :: DB | eff) Unit
+execute :: forall eff a. Query a -> Array SqlValue -> Client -> Aff (db :: DB | eff) Unit
 execute (Query sql) params client = void $ runQuery sql params client
 
 -- | Runs a query and returns nothing
@@ -74,13 +75,13 @@ execute_ (Query sql) client = void $ runQuery_ sql client
 -- | Runs a query and returns all results.
 query :: forall eff a p
   . (IsForeign a)
-  => Query a -> [SqlValue] -> Client -> Aff (db :: DB | eff) [a]
+  => Query a -> Array SqlValue -> Client -> Aff (db :: DB | eff) (Array a)
 query (Query sql) params client = do
   rows <- runQuery sql params client
   either liftError pure (sequence $ read <$> rows)
 
 -- | Just like `query` but does not make any param replacement
-query_ :: forall eff a. (IsForeign a) => Query a -> Client -> Aff (db :: DB | eff) [a]
+query_ :: forall eff a. (IsForeign a) => Query a -> Client -> Aff (db :: DB | eff) (Array a)
 query_ (Query sql) client = do
   rows <- runQuery_ sql client
   either liftError pure (sequence $ read <$> rows)
@@ -88,7 +89,7 @@ query_ (Query sql) client = do
 -- | Runs a query and returns the first row, if any
 queryOne :: forall eff a
   . (IsForeign a)
-  => Query a -> [SqlValue] -> Client -> Aff (db :: DB | eff) (Maybe a)
+  => Query a -> Array SqlValue -> Client -> Aff (db :: DB | eff) (Maybe a)
 queryOne (Query sql) params client = do
   rows <- runQuery sql params client
   maybe (pure Nothing) (either liftError (pure <<< Just)) $ read <$> (rows !! 0)
@@ -102,7 +103,7 @@ queryOne_ (Query sql) client = do
 -- | Runs a query and returns a single value, if any.
 queryValue :: forall eff a
   . (IsForeign a)
-  => Query a -> [SqlValue] -> Client -> Aff (db :: DB | eff) (Maybe a)
+  => Query a -> Array SqlValue -> Client -> Aff (db :: DB | eff) (Maybe a)
 queryValue (Query sql) params client = do
   val <- runQueryValue sql params client
   pure $ either (const Nothing) Just (read val)
@@ -134,127 +135,18 @@ withClient info p = runFn2 _withClient (mkConnectionString info) p
 liftError :: forall e a. ForeignError -> Aff e a
 liftError err = throwError $ error (show err)
 
-finally :: forall eff a. Aff eff a -> Aff eff Unit -> Aff eff a
-finally a sequel = do
-  res <- attempt a
-  sequel
-  either throwError pure res
+foreign import connect' :: forall eff. String -> Aff (db :: DB | eff) Client
 
+foreign import _withClient :: forall eff a. Fn2 ConnectionString (Client -> Aff (db :: DB | eff) a) (Aff (db :: DB | eff) a)
 
-foreign import connect' """
-  function connect$prime(conString) {
-    return function(success, error) {
-      var pg = require('pg');
-      var client = new pg.Client(conString);
-      client.connect(function(err) {
-        if (err) {
-          error(err);
-        } else {
-          success(client);
-        }
-      })
-      return client;
-    }
-  }
-  """ :: forall eff. String -> Aff (db :: DB | eff) Client
+foreign import runQuery_ :: forall eff. String -> Client -> Aff (db :: DB | eff) (Array Foreign)
 
-foreign import _withClient
-  """
-  function _withClient(conString, cb) {
-    return function(success, error) {
-      var pg = require('pg');
-      pg.connect(conString, function(err, client, done) {
-        if (err) {
-          done(true);
-          return error(err);
-        }
-        cb(client)(function(v) {
-          done();
-          success(v);
-        }, function(err) {
-          done();
-          error(err);
-        })
-      });
-    };
-  }
-  """ :: forall eff a.
-      Fn2
-      ConnectionString
-      (Client -> Aff (db :: DB | eff) a)
-      (Aff (db :: DB | eff) a)
+foreign import runQuery :: forall eff. String -> Array SqlValue -> Client -> Aff (db :: DB | eff) (Array Foreign)
 
-foreign import runQuery_ """
-  function runQuery_(queryStr) {
-    return function(client) {
-      return function(success, error) {
-        client.query(queryStr, function(err, result) {
-          if (err) {
-            error(err);
-          } else {
-            success(result.rows);
-          }
-        })
-      };
-    };
-  }
-  """ :: forall eff. String -> Client -> Aff (db :: DB | eff) [Foreign]
+foreign import runQueryValue_ :: forall eff. String -> Client -> Aff (db :: DB | eff) Foreign
 
-foreign import runQuery """
-  function runQuery(queryStr) {
-    return function(params) {
-      return function(client) {
-        return function(success, error) {
-          client.query(queryStr, params, function(err, result) {
-            if (err) return error(err);
-            success(result.rows);
-          })
-        };
-      };
-    }
-  }
-  """ :: forall eff. String -> [SqlValue] -> Client -> Aff (db :: DB | eff) [Foreign]
+foreign import runQueryValue :: forall eff. String -> Array SqlValue -> Client -> Aff (db :: DB | eff) Foreign
 
-foreign import runQueryValue_ """
-  function runQueryValue_(queryStr) {
-    return function(client) {
-      return function(success, error) {
-        client.query(queryStr, function(err, result) {
-          if (err) return error(err);
-          success(result.rows.length > 0 ? result.rows[0][result.fields[0].name] : undefined);
-        })
-      };
-    };
-  }
-  """ :: forall eff. String -> Client -> Aff (db :: DB | eff) Foreign
+foreign import end :: forall eff. Client -> Eff (db :: DB | eff) Unit
 
-foreign import runQueryValue """
-  function runQueryValue(queryStr) {
-    return function(params) {
-      return function(client) {
-        return function(success, error) {
-          client.query(queryStr, params, function(err, result) {
-            if (err) return error(err);
-            success(result.rows.length > 0 ? result.rows[0][result.fields[0].name] : undefined);
-          })
-        };
-      };
-    }
-  }
-  """ :: forall eff. String -> [SqlValue] -> Client -> Aff (db :: DB | eff) Foreign
-
-foreign import end """
-  function end(client) {
-    return function() {
-      client.end();
-    };
-  }
-  """ :: forall eff. Client -> Eff (db :: DB | eff) Unit
-
-foreign import disconnect
-  """
-  function disconnect() {
-    var pg = require('pg');
-    pg.end();
-  }
-  """ :: forall eff. Eff (db :: DB | eff) Unit
+foreign import disconnect :: forall eff. Eff (db :: DB | eff) Unit

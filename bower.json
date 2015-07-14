@@ -4,6 +4,10 @@
   "moduleType": [
     "node"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/epost/purescript-node-postgres.git"
+  },
   "authors": [
     {
       "name": "Erik Post",

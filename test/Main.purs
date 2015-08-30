@@ -38,7 +38,7 @@ main = runAff C.print (const $ C.log "All ok") $ do
 
 data Artist = Artist
   { name :: String
-  , year :: Number
+  , year :: Int
   }
 
 connectionInfo =

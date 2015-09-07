@@ -18,7 +18,6 @@ module Database.Postgres
 
 import Prelude
 import Control.Alt
-import Control.Apply ((*>))
 import Control.Monad.Eff
 import Control.Monad.Trans
 import Data.Either

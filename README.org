@@ -1,6 +1,15 @@
 #+title: PureScript bindings for node-postgres
 
-Provides PureScript bindings for the [[https://www.npmjs.org/package/pg][pg library]] ([[https://github.com/brianc/node-postgres][node-postgres]] on GitHub).
+#+BEGIN_HTML
+<a href="http://pursuit.purescript.org/packages/purescript-node-postgres">
+  <img src="http://pursuit.purescript.org/packages/purescript-node-postgres/badge" alt="purescript-node-postgres on Pursuit">
+  </img>
+</a>
+<br>
+#+END_HTML
+
+
+PureScript bindings for the [[https://www.npmjs.org/package/pg][pg library]] ([[https://github.com/brianc/node-postgres][node-postgres]] on GitHub).
 
 * Installation
 

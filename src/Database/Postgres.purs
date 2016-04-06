@@ -17,22 +17,20 @@ module Database.Postgres
   ) where
 
 import Prelude
-import Control.Alt
-import Control.Monad.Eff
-import Control.Monad.Trans
-import Data.Either
+import Control.Monad.Eff (Eff)
+import Data.Either (either)
 import Data.Function (Fn2(), runFn2)
-import Data.Array
-import Data.Foreign
-import Data.Foreign.Class
-import Data.Maybe
-import Control.Monad.Aff
-import Control.Monad.Eff.Class
-import Control.Monad.Eff.Exception(Error(), error)
-import Control.Monad.Error.Class (throwError, catchError)
+import Data.Array ((!!))
+import Data.Foreign (Foreign, ForeignError)
+import Data.Foreign.Class (class IsForeign, read)
+import Data.Maybe (Maybe(Just, Nothing), maybe)
+import Control.Monad.Aff (Aff, finally)
+import Control.Monad.Eff.Class (liftEff)
+import Control.Monad.Eff.Exception (error)
+import Control.Monad.Error.Class (throwError)
 import Data.Traversable (sequence)
 
-import Database.Postgres.SqlValue
+import Database.Postgres.SqlValue (SqlValue)
 
 newtype Query a = Query String
 
@@ -72,7 +70,7 @@ execute_ :: forall eff a. Query a -> Client -> Aff (db :: DB | eff) Unit
 execute_ (Query sql) client = void $ runQuery_ sql client
 
 -- | Runs a query and returns all results.
-query :: forall eff a p
+query :: forall eff a
   . (IsForeign a)
   => Query a -> Array SqlValue -> Client -> Aff (db :: DB | eff) (Array a)
 query (Query sql) params client = do

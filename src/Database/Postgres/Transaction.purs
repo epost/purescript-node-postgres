@@ -2,12 +2,11 @@ module Database.Postgres.Transaction where
 
 import Prelude
 import Control.Apply ((*>))
-import Control.Monad.Aff
+import Control.Monad.Aff (Aff, attempt)
 import Control.Monad.Error.Class (throwError)
-import Data.Either
+import Data.Either (either)
 
-import Database.Postgres
-import Database.Postgres.SqlValue
+import Database.Postgres (DB, Client, Query(Query), execute_)
 
 -- | Runs an asynchronous action in a database transaction. The transaction
 -- | will be rolled back if the computation fails and committed otherwise.

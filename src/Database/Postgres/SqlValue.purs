@@ -1,12 +1,12 @@
 module Database.Postgres.SqlValue
   ( SqlValue()
-  , IsSqlValue
+  , class IsSqlValue
   , toSql
   ) where
 
 import Prelude ((<<<))
-import Data.Int
-import Data.Maybe
+import Data.Int (toNumber)
+import Data.Maybe (Maybe(..))
 
 foreign import data SqlValue :: *
 

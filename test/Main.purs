@@ -1,27 +1,23 @@
 module Test.Main where
 
-import Prelude
-import qualified Control.Monad.Eff.Console as C
+import Control.Monad.Eff.Console as C
+import Control.Monad.Aff (Aff, apathize, attempt, runAff)
 import Control.Monad.Aff.Console (log, print)
-
-import Control.Monad.Eff
-import Control.Monad.Eff.Class
-import Control.Monad.Cont.Trans
-import Control.Monad.Trans
-import Control.Monad.Error.Class (throwError)
+import Control.Monad.Eff (Eff)
+import Control.Monad.Eff.Class (liftEff)
+import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Eff.Exception (error)
-import Data.Array
-import Data.Foldable
-import Data.Either
-import Data.Maybe
-import Data.Foreign
-import Data.Foreign.Class
-import Control.Monad.Aff
+import Control.Monad.Error.Class (throwError)
+import Data.Either (either)
+import Data.Foldable (foldMap)
+import Data.Foreign.Class (class IsForeign, readProp)
+import Data.Maybe (Maybe)
+import Database.Postgres (DB, Query(Query), queryOne_, execute_, withConnection, query, withClient, end, query_, connect, queryValue_, disconnect, mkConnectionString)
+import Database.Postgres.SqlValue (toSql)
+import Database.Postgres.Transaction (withTransaction)
+import Prelude (class Show, Unit, return, ($), bind, show, (<>), void, flip, (>>>), const)
 
-import Database.Postgres
-import Database.Postgres.SqlValue
-import Database.Postgres.Transaction
-
+main :: forall eff. Eff ( console :: CONSOLE , db :: DB | eff ) Unit
 main = runAff C.print (const $ C.log "All ok") $ do
   print $ "connecting to " <> mkConnectionString connectionInfo <> "..."
   exampleUsingWithConnection

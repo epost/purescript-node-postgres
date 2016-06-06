@@ -7,6 +7,7 @@ module Database.Postgres.SqlValue
 import Prelude ((<<<))
 import Data.Int (toNumber)
 import Data.Maybe (Maybe(..))
+import Data.Date as Date
 
 foreign import data SqlValue :: *
 
@@ -25,6 +26,9 @@ instance isSqlValueInt :: IsSqlValue Int where
 instance isSqlValueMaybe :: (IsSqlValue a) => IsSqlValue (Maybe a) where
   toSql Nothing = nullSqlValue
   toSql (Just x) = toSql x
+
+instance isSqlValueDate :: IsSqlValue Date.Date where
+  toSql = unsafeToSqlValue
 
 foreign import unsafeToSqlValue :: forall a. a -> SqlValue
 

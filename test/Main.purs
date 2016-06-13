@@ -1,8 +1,9 @@
 module Test.Main where
 
+import Prelude
 import Control.Monad.Eff.Console as C
 import Control.Monad.Aff (Aff, apathize, attempt, runAff)
-import Control.Monad.Aff.Console (log, print)
+import Control.Monad.Aff.Console (log, logShow)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (CONSOLE)
@@ -15,11 +16,10 @@ import Data.Maybe (Maybe)
 import Database.Postgres (DB, Query(Query), queryOne_, execute_, withConnection, query, withClient, end, query_, connect, queryValue_, disconnect, mkConnectionString)
 import Database.Postgres.SqlValue (toSql)
 import Database.Postgres.Transaction (withTransaction)
-import Prelude (class Show, Unit, return, ($), bind, show, (<>), void, flip, (>>>), const)
 
 main :: forall eff. Eff ( console :: CONSOLE , db :: DB | eff ) Unit
-main = runAff C.print (const $ C.log "All ok") $ do
-  print $ "connecting to " <> mkConnectionString connectionInfo <> "..."
+main = runAff C.logShow (const $ C.log "All ok") $ do
+  logShow $ "connecting to " <> mkConnectionString connectionInfo <> "..."
   exampleUsingWithConnection
   exampleLowLevel
 
@@ -51,7 +51,7 @@ exampleUsingWithConnection = withConnection connectionInfo $ \c -> do
   execute_ (Query "insert into artist values ('Led Zeppelin', 1968)") c
   execute_ (Query "insert into artist values ('Deep Purple', 1968)") c
   year <- queryValue_ (Query "insert into artist values ('Fairport Convention', 1967) returning year" :: Query Number) c
-  print (show year)
+  logShow (show year)
   artists <- query_ (Query "select * from artist" :: Query Artist) c
   printRows artists
 
@@ -83,7 +83,7 @@ exampleTransaction = withConnection connectionInfo $ \c -> do
   execute_ (Query "delete from artist") c
   apathize $ tryInsert c
   one <- queryOne_ (Query "select * from artist" :: Query Artist) c
-  void $ print one
+  void $ logShow one
     where
     tryInsert = withTransaction $ \c -> do
       execute_ (Query "insert into artist values ('Not there', 1999)") c
@@ -100,4 +100,4 @@ instance artistIsForeign :: IsForeign Artist where
   read obj = do
     n <- readProp "name" obj
     y <- readProp "year" obj
-    return $ Artist { name: n, year: y }
+    pure $ Artist { name: n, year: y }

@@ -11,6 +11,7 @@ import Data.Maybe (Maybe(..))
 import Data.Date (year, month, day)
 import Data.DateTime (DateTime(DateTime))
 import Data.Time (hour, minute, second)
+import Unsafe.Coerce (unsafeCoerce)
 
 foreign import data SqlValue :: *
 
@@ -18,13 +19,13 @@ class IsSqlValue a where
   toSql :: a -> SqlValue
 
 instance isSqlValueString :: IsSqlValue String where
-  toSql = unsafeToSqlValue
+  toSql = unsafeCoerce
 
 instance isSqlValueNumber :: IsSqlValue Number where
-  toSql = unsafeToSqlValue
+  toSql = unsafeCoerce
 
 instance isSqlValueInt :: IsSqlValue Int where
-  toSql = unsafeToSqlValue <<< toNumber
+  toSql = unsafeCoerce <<< toNumber
 
 instance isSqlValueMaybe :: (IsSqlValue a) => IsSqlValue (Maybe a) where
   toSql Nothing = nullSqlValue
@@ -44,7 +45,5 @@ instance isSqlValueDateTime :: IsSqlValue DateTime where
       zeroPad :: Int -> String
       zeroPad i | i < 10 = "0" <> (show i)
       zeroPad i = show i
-
-foreign import unsafeToSqlValue :: forall a. a -> SqlValue
 
 foreign import nullSqlValue :: SqlValue

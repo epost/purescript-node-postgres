@@ -4,10 +4,13 @@ module Database.Postgres.SqlValue
   , toSql
   ) where
 
-import Prelude ((<<<))
+import Prelude
+import Data.Enum (fromEnum)
 import Data.Int (toNumber)
 import Data.Maybe (Maybe(..))
-import Data.Date as Date
+import Data.Date (year, month, day)
+import Data.DateTime (DateTime(DateTime))
+import Data.Time (hour, minute, second)
 
 foreign import data SqlValue :: *
 
@@ -27,8 +30,20 @@ instance isSqlValueMaybe :: (IsSqlValue a) => IsSqlValue (Maybe a) where
   toSql Nothing = nullSqlValue
   toSql (Just x) = toSql x
 
-instance isSqlValueDate :: IsSqlValue Date.Date where
-  toSql = unsafeToSqlValue
+instance isSqlValueDateTime :: IsSqlValue DateTime where
+  toSql = toSql <<< format
+    where
+      format (DateTime d t)
+        = show (fromEnum (year d)) <> "-"
+        <> zeroPad (fromEnum (month d)) <> "-"
+        <> zeroPad (fromEnum (day d)) <> " "
+        <> zeroPad (fromEnum (hour t)) <> ":"
+        <> zeroPad (fromEnum (minute t)) <> ":"
+        <> zeroPad (fromEnum (second t))
+
+      zeroPad :: Int -> String
+      zeroPad i | i < 10 = "0" <> (show i)
+      zeroPad i = show i
 
 foreign import unsafeToSqlValue :: forall a. a -> SqlValue
 

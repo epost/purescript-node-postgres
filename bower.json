@@ -31,9 +31,14 @@
     "purescript-foreign": "^1.0.0",
     "purescript-foldable-traversable": "^1.0.0",
     "purescript-transformers": "^1.0.0",
-    "purescript-aff": "~0.17.0",
+    "purescript-aff": "^1.0.0",
     "purescript-integers": "^1.0.0",
     "purescript-datetime": "^1.0.0",
-    "purescript-unsafe-coerce": "~1.0.0"
+    "purescript-unsafe-coerce": "^1.0.0",
+    "purescript-nullable": "^1.0.1"
+  },
+  "devDependencies": {
+    "purescript-spec": "~0.8.0",
+    "purescript-generics": "~1.0.0"
   }
 }

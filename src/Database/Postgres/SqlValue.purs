@@ -7,11 +7,12 @@ module Database.Postgres.SqlValue
 import Prelude
 import Data.Enum (fromEnum)
 import Data.Int (toNumber)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe)
 import Data.Date (year, month, day)
 import Data.DateTime (DateTime(DateTime))
 import Data.Time (hour, minute, second)
 import Unsafe.Coerce (unsafeCoerce)
+import Data.Nullable (toNullable)
 
 foreign import data SqlValue :: *
 
@@ -28,8 +29,7 @@ instance isSqlValueInt :: IsSqlValue Int where
   toSql = unsafeCoerce <<< toNumber
 
 instance isSqlValueMaybe :: (IsSqlValue a) => IsSqlValue (Maybe a) where
-  toSql Nothing = nullSqlValue
-  toSql (Just x) = toSql x
+  toSql = unsafeCoerce <<< toNullable <<< (toSql <$> _)
 
 instance isSqlValueDateTime :: IsSqlValue DateTime where
   toSql = toSql <<< format
@@ -45,5 +45,3 @@ instance isSqlValueDateTime :: IsSqlValue DateTime where
       zeroPad :: Int -> String
       zeroPad i | i < 10 = "0" <> (show i)
       zeroPad i = show i
-
-foreign import nullSqlValue :: SqlValue

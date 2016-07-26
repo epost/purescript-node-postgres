@@ -26,12 +26,19 @@
     "output"
   ],
   "dependencies": {
-    "purescript-arrays": "~0.4.0",
-    "purescript-either": "~0.2.0",
-    "purescript-foreign": "~0.7.0",
-    "purescript-foldable-traversable": "~0.4.0",
-    "purescript-transformers": "~0.8.0",
-    "purescript-aff": "~0.16.0",
-    "purescript-integers": "~0.2.0"
+    "purescript-arrays": "^1.0.0",
+    "purescript-either": "^1.0.0",
+    "purescript-foreign": "^1.0.0",
+    "purescript-foldable-traversable": "^1.0.0",
+    "purescript-transformers": "^1.0.0",
+    "purescript-aff": "^1.0.0",
+    "purescript-integers": "^1.0.0",
+    "purescript-datetime": "^1.0.0",
+    "purescript-unsafe-coerce": "^1.0.0",
+    "purescript-nullable": "^1.0.1"
+  },
+  "devDependencies": {
+    "purescript-spec": "~0.8.0",
+    "purescript-generics": "~1.0.0"
   }
 }

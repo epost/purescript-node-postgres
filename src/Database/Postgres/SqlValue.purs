@@ -4,9 +4,15 @@ module Database.Postgres.SqlValue
   , toSql
   ) where
 
-import Prelude ((<<<))
+import Prelude
+import Data.Enum (fromEnum)
 import Data.Int (toNumber)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe)
+import Data.Date (year, month, day)
+import Data.DateTime (DateTime(DateTime))
+import Data.Time (hour, minute, second)
+import Unsafe.Coerce (unsafeCoerce)
+import Data.Nullable (toNullable)
 
 foreign import data SqlValue :: *
 
@@ -14,18 +20,28 @@ class IsSqlValue a where
   toSql :: a -> SqlValue
 
 instance isSqlValueString :: IsSqlValue String where
-  toSql = unsafeToSqlValue
+  toSql = unsafeCoerce
 
 instance isSqlValueNumber :: IsSqlValue Number where
-  toSql = unsafeToSqlValue
+  toSql = unsafeCoerce
 
 instance isSqlValueInt :: IsSqlValue Int where
-  toSql = unsafeToSqlValue <<< toNumber
+  toSql = unsafeCoerce <<< toNumber
 
 instance isSqlValueMaybe :: (IsSqlValue a) => IsSqlValue (Maybe a) where
-  toSql Nothing = nullSqlValue
-  toSql (Just x) = toSql x
+  toSql = unsafeCoerce <<< toNullable <<< (toSql <$> _)
 
-foreign import unsafeToSqlValue :: forall a. a -> SqlValue
+instance isSqlValueDateTime :: IsSqlValue DateTime where
+  toSql = toSql <<< format
+    where
+      format (DateTime d t)
+        = show (fromEnum (year d)) <> "-"
+        <> zeroPad (fromEnum (month d)) <> "-"
+        <> zeroPad (fromEnum (day d)) <> " "
+        <> zeroPad (fromEnum (hour t)) <> ":"
+        <> zeroPad (fromEnum (minute t)) <> ":"
+        <> zeroPad (fromEnum (second t))
 
-foreign import nullSqlValue :: SqlValue
+      zeroPad :: Int -> String
+      zeroPad i | i < 10 = "0" <> (show i)
+      zeroPad i = show i

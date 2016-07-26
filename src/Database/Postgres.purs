@@ -19,7 +19,7 @@ module Database.Postgres
 import Prelude
 import Control.Monad.Eff (Eff)
 import Data.Either (either)
-import Data.Function (Fn2(), runFn2)
+import Data.Function.Uncurried (Fn2(), runFn2)
 import Data.Array ((!!))
 import Data.Foreign (Foreign, ForeignError)
 import Data.Foreign.Class (class IsForeign, read)

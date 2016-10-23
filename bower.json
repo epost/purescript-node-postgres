@@ -26,19 +26,20 @@
     "output"
   ],
   "dependencies": {
-    "purescript-arrays": "^1.0.0",
-    "purescript-either": "^1.0.0",
-    "purescript-foreign": "^1.0.0",
-    "purescript-foldable-traversable": "^1.0.0",
-    "purescript-transformers": "^1.0.0",
-    "purescript-aff": "^1.0.0",
-    "purescript-integers": "^1.0.0",
-    "purescript-datetime": "^1.0.0",
-    "purescript-unsafe-coerce": "^1.0.0",
-    "purescript-nullable": "^1.0.1"
+    "purescript-arrays": "^3.0.0",
+    "purescript-either": "^2.0.0",
+    "purescript-foreign": "^3.0.0",
+    "purescript-foldable-traversable": "^2.0.0",
+    "purescript-transformers": "^2.0.0",
+    "purescript-aff": "^2.0.0",
+    "purescript-integers": "^2.0.0",
+    "purescript-datetime": "^2.0.0",
+    "purescript-unsafe-coerce": "^2.0.0",
+    "purescript-nullable": "^2.0.0"
   },
   "devDependencies": {
-    "purescript-spec": "~0.8.0",
-    "purescript-generics": "~1.0.0"
+    "purescript-spec": "git://github.com/anttih/purescript-spec#psc-0.10-updates",
+    "purescript-generics": "^3.0.0",
+    "purescript-js-date": "^3.0.0"
   }
 }

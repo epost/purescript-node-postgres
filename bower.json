@@ -38,7 +38,7 @@
     "purescript-nullable": "^2.0.0"
   },
   "devDependencies": {
-    "purescript-spec": "git://github.com/anttih/purescript-spec#psc-0.10-updates",
+    "purescript-spec": "^0.10.0",
     "purescript-generics": "^3.0.0",
     "purescript-js-date": "^3.0.0"
   }

@@ -1,35 +1,37 @@
 module Test.Main where
 
 import Prelude
+
 import Control.Monad.Aff (Aff, apathize, attempt)
+import Control.Monad.Aff.AVar (AVAR)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Eff.Exception (error)
+import Control.Monad.Eff.Timer (TIMER)
 import Control.Monad.Error.Class (throwError)
 import Data.Array (length)
 import Data.Date (canonicalDate)
-import Data.DateTime (DateTime(..))
 import Data.Date.Component (Month(..))
-import Data.Enum (toEnum)
-import Data.Time (Time(..))
+import Data.DateTime (DateTime(..))
 import Data.Either (either)
+import Data.Enum (toEnum)
 import Data.Foreign (Foreign)
+import Data.Foreign.Class (class Decode, decode)
+import Data.Foreign.Index (readProp)
+import Data.Generic (class Generic, gEq)
 import Data.JSDate (toDateTime)
 import Data.Maybe (Maybe(Nothing, Just), maybe)
-import Data.Foreign.Class (class IsForeign, readProp)
-import Data.Generic (class Generic, gEq)
-import Database.Postgres (DB, Query(Query), queryOne_, execute, execute_, withConnection, query, withClient, end, query_, connect, queryValue_, mkConnectionString)
+import Data.Time (Time(..))
+import Database.Postgres (DB, Query(Query), connect, end, execute, execute_, mkConnectionString, query, queryOne_, queryValue_, query_, withClient, withConnection)
 import Database.Postgres.SqlValue (toSql)
 import Database.Postgres.Transaction (withTransaction)
 import Node.Process (PROCESS)
-
-import Unsafe.Coerce (unsafeCoerce)
-
 import Test.Spec (describe, it)
-import Test.Spec.Runner (run)
 import Test.Spec.Assertions (fail, shouldEqual)
 import Test.Spec.Reporter.Console (consoleReporter)
+import Test.Spec.Runner (run)
+import Unsafe.Coerce (unsafeCoerce)
 
 data Artist = Artist
   { name :: String
@@ -45,7 +47,16 @@ connectionInfo =
   , password: "test"
   }
 
-main :: Eff (process :: PROCESS, console :: CONSOLE , db :: DB) Unit
+main :: forall eff.
+  Eff
+    ( console :: CONSOLE
+    , timer :: TIMER
+    , avar :: AVAR
+    , process :: PROCESS
+    , db :: DB
+    | eff
+    )
+    Unit
 main = run [consoleReporter] do
   describe "connection string" do
     it "should build one from the connection record" do
@@ -111,7 +122,7 @@ main = run [consoleReporter] do
         ) dt
 
 
-  describe "transactions" do 
+  describe "transactions" do
     it "does not commit after an error inside a transation" do
       withConnection connectionInfo $ \c -> do
         execute_ (Query "delete from artist") c
@@ -138,8 +149,8 @@ derive instance genericArtist :: Generic Artist
 instance eqArtist :: Eq Artist where
   eq = gEq
 
-instance artistIsForeign :: IsForeign Artist where
-  read obj = do
-    n <- readProp "name" obj
-    y <- readProp "year" obj
+instance artistIsForeign :: Decode Artist where
+  decode obj = do
+    n <- decode =<< readProp "name" obj
+    y <- decode =<< readProp "year" obj
     pure $ Artist { name: n, year: y }

@@ -14,7 +14,7 @@ import Data.Time (hour, minute, second)
 import Unsafe.Coerce (unsafeCoerce)
 import Data.Nullable (toNullable)
 
-foreign import data SqlValue :: *
+foreign import data SqlValue :: Type
 
 class IsSqlValue a where
   toSql :: a -> SqlValue

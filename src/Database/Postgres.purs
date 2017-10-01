@@ -17,20 +17,20 @@ module Database.Postgres
   ) where
 
 import Prelude
+
+import Control.Monad.Aff (Aff, bracket)
 import Control.Monad.Eff (kind Effect, Eff)
-import Data.Either (Either, either)
-import Data.Function.Uncurried (Fn2(), runFn2)
-import Data.Array ((!!))
-import Data.Foreign (Foreign, MultipleErrors)
-import Data.Foreign.Class (class Decode, decode)
-import Data.Maybe (Maybe(Just, Nothing), maybe)
-import Control.Monad.Except (runExcept)
-import Control.Monad.Aff (Aff, finally)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Exception (error)
 import Control.Monad.Error.Class (throwError)
+import Control.Monad.Except (runExcept)
+import Data.Array ((!!))
+import Data.Either (Either, either)
+import Data.Foreign (Foreign, MultipleErrors)
+import Data.Foreign.Class (class Decode, decode)
+import Data.Function.Uncurried (Fn2, runFn2)
+import Data.Maybe (Maybe(Just, Nothing), maybe)
 import Data.Traversable (sequence)
-
 import Database.Postgres.SqlValue (SqlValue)
 
 newtype Query a = Query String
@@ -118,9 +118,11 @@ withConnection :: forall eff a
   . ConnectionInfo
   -> (Client -> Aff (db :: DB | eff) a)
   -> Aff (db :: DB | eff) a
-withConnection info p = do
-  client <- connect info
-  finally (p client) $ liftEff (end client)
+withConnection info p =
+  bracket
+    (connect info)
+    (liftEff <<< end)
+    p
 
 -- | Takes a Client from the connection pool, runs the given function with
 -- | the client and returns the results.

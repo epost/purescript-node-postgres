@@ -8,7 +8,6 @@ import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Eff.Exception (error)
-import Control.Monad.Eff.Timer (TIMER)
 import Control.Monad.Error.Class (throwError)
 import Data.Array (length)
 import Data.Date (canonicalDate)
@@ -26,11 +25,10 @@ import Data.Time (Time(..))
 import Database.Postgres (DB, Query(Query), connect, end, execute, execute_, mkConnectionString, query, queryOne_, queryValue_, query_, withClient, withConnection)
 import Database.Postgres.SqlValue (toSql)
 import Database.Postgres.Transaction (withTransaction)
-import Node.Process (PROCESS)
 import Test.Spec (describe, it)
 import Test.Spec.Assertions (fail, shouldEqual)
 import Test.Spec.Reporter.Console (consoleReporter)
-import Test.Spec.Runner (run)
+import Test.Spec.Runner (PROCESS, run)
 import Unsafe.Coerce (unsafeCoerce)
 
 data Artist = Artist
@@ -50,7 +48,6 @@ connectionInfo =
 main :: forall eff.
   Eff
     ( console :: CONSOLE
-    , timer :: TIMER
     , avar :: AVAR
     , process :: PROCESS
     , db :: DB

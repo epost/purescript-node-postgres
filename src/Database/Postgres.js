@@ -3,95 +3,98 @@
 
 var pg = require('pg');
 
-exports["connect'"] = function (conString) {
-  return function(success, error) {
-    var client = new pg.Client(conString);
-    client.connect(function(err) {
+exports.mkPool = function (conInfo) {
+  return function () {
+    return new pg.Pool(conInfo);
+  };
+}
+
+exports["connect'"] = function (pool) {
+  return function(error, success) {
+    pool.connect(function(err, client) {
       if (err) {
         error(err);
       } else {
         success(client);
       }
-    })
-    return client;
-  };
-}
-
-exports._withClient = function (conString, cb) {
-  return function(success, error) {
-    pg.connect(conString, function(err, client, done) {
-      if (err) {
-        done(true);
-        return error(err);
-      }
-      cb(client)(function(v) {
-        done();
-        success(v);
-      }, function(err) {
-        done();
-        error(err);
-      })
     });
+    return function(cancelError, onCancelerError, onCancelerSuccess) {
+      onCancelerSuccess();
+    };
   };
 }
 
-exports.runQuery_ = function (queryStr) {
+exports.runQuery_ = function(queryStr) {
   return function(client) {
-    return function(success, error) {
+    return function(error, success) {
       client.query(queryStr, function(err, result) {
         if (err) {
           error(err);
         } else {
           success(result.rows);
         }
-      })
+      });
+      return function(cancelError, onCancelerError, onCancelerSuccess) {
+        onCancelerSuccess();
+      };
     };
   };
 }
 
-exports.runQuery = function (queryStr) {
+exports.runQuery = function(queryStr) {
   return function(params) {
     return function(client) {
-      return function(success, error) {
+      return function(error, success) {
         client.query(queryStr, params, function(err, result) {
           if (err) return error(err);
           success(result.rows);
-        })
+        });
+        return function(cancelError, onCancelerError, onCancelerSuccess) {
+          onCancelerSuccess();
+        };
       };
     };
   };
 }
 
-exports.runQueryValue_ = function (queryStr) {
+exports.runQueryValue_ = function(queryStr) {
   return function(client) {
-    return function(success, error) {
+    return function(error, success) {
       client.query(queryStr, function(err, result) {
         if (err) return error(err);
         success(result.rows.length > 0 ? result.rows[0][result.fields[0].name] : undefined);
-      })
-    };
-  };
-}
-
-exports.runQueryValue = function (queryStr) {
-  return function(params) {
-    return function(client) {
-      return function(success, error) {
-        client.query(queryStr, params, function(err, result) {
-          if (err) return error(err);
-          success(result.rows.length > 0 ? result.rows[0][result.fields[0].name] : undefined);
-        })
+      });
+      return function(cancelError, onCancelerError, onCancelerSuccess) {
+        onCancelerSuccess();
       };
     };
   };
 }
 
-exports.end = function (client) {
-  return function() {
-    client.end();
+exports.runQueryValue = function(queryStr) {
+  return function(params) {
+    return function(client) {
+      return function(error, success) {
+        client.query(queryStr, params, function(err, result) {
+          if (err) return error(err);
+          success(result.rows.length > 0 ? result.rows[0][result.fields[0].name] : undefined);
+        });
+        return function(cancelError, onCancelerError, onCancelerSuccess) {
+          onCancelerSuccess();
+        };
+      };
+    };
   };
 }
 
-exports.disconnect = function () {
-  pg.end();
+exports.release = function (client) {
+  return function () {
+    client.release();
+  };
+}
+
+exports.end = function(pool) {
+  return function() {
+    pool.end();
+  };
 }

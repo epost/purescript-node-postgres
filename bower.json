@@ -1,6 +1,6 @@
 {
   "name": "purescript-node-postgres",
-  "version": "2.0.0",
+  "version": "4.0.0",
   "moduleType": [
     "node"
   ],
@@ -40,7 +40,7 @@
     "purescript-foreign-generic": "^5.0.0"
   },
   "devDependencies": {
-    "purescript-spec": "git@github.com:justinwoo/purescript-spec.git#3a0ac612af654ff74e9183fd1d46b8ef8b505f8f",
+    "purescript-spec": "^2.0.0",
     "purescript-generics": "^4.0.0",
     "purescript-js-date": "^5.1.0"
   }

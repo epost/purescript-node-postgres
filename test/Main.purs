@@ -8,7 +8,6 @@ import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Eff.Exception (error)
-import Control.Monad.Eff.Timer (TIMER)
 import Control.Monad.Error.Class (throwError)
 import Data.Array (length)
 import Data.Date (canonicalDate)
@@ -23,14 +22,15 @@ import Data.Generic (class Generic, gEq)
 import Data.JSDate (toDateTime)
 import Data.Maybe (Maybe(Nothing, Just), maybe)
 import Data.Time (Time(..))
-import Database.Postgres (DB, Query(Query), connect, end, execute, execute_, mkConnectionString, query, queryOne_, queryValue_, query_, withClient, withConnection)
+import Database.Postgres (DB, Query(Query), connect, end, execute, execute_,
+  query, queryOne_, queryValue_, query_, withClient, ClientConfig,
+  ConnectionInfo, connectionInfoFromConfig, defaultPoolConfig, mkPool, release)
 import Database.Postgres.SqlValue (toSql)
 import Database.Postgres.Transaction (withTransaction)
-import Node.Process (PROCESS)
 import Test.Spec (describe, it)
 import Test.Spec.Assertions (fail, shouldEqual)
 import Test.Spec.Reporter.Console (consoleReporter)
-import Test.Spec.Runner (run)
+import Test.Spec.Runner (PROCESS, run)
 import Unsafe.Coerce (unsafeCoerce)
 
 data Artist = Artist
@@ -38,19 +38,22 @@ data Artist = Artist
   , year :: Int
   }
 
-connectionInfo :: { host :: String, db :: String, port :: Int, user :: String, password :: String }
-connectionInfo =
+clientConfig :: ClientConfig
+clientConfig =
   { host: "localhost"
-  , db: "test"
+  , database: "test"
   , port: 5432
   , user: "testuser"
   , password: "test"
+  , ssl: false
   }
+
+connectionInfo :: ConnectionInfo
+connectionInfo = connectionInfoFromConfig clientConfig defaultPoolConfig
 
 main :: forall eff.
   Eff
     ( console :: CONSOLE
-    , timer :: TIMER
     , avar :: AVAR
     , process :: PROCESS
     , db :: DB
@@ -58,13 +61,10 @@ main :: forall eff.
     )
     Unit
 main = run [consoleReporter] do
-  describe "connection string" do
-    it "should build one from the connection record" do
-      mkConnectionString connectionInfo `shouldEqual` "postgres://testuser:test@localhost:5432/test"
-
-  describe "withConnection" do
-    it "Returns a connection" do
-      withConnection connectionInfo $ \c -> do
+  describe "withClient" do
+    it "Returns a client" do
+      pool <- liftEff $ mkPool connectionInfo
+      withClient pool $ \c -> do
         execute_ (Query "delete from artist") c
         execute_ (Query "insert into artist values ('Led Zeppelin', 1968)") c
         execute_ (Query "insert into artist values ('Deep Purple', 1968)") c
@@ -77,17 +77,20 @@ main = run [consoleReporter] do
 
         artists <- query_ (Query "select * from artist" :: Query Artist) c
         length artists `shouldEqual` 3
+        liftEff $ end pool
 
   describe "Low level API" do
     it "Can be used to manage connections manually" do
-      client <- connect connectionInfo
+      pool <- liftEff $ mkPool connectionInfo
+      client <- connect pool
       execute_ (Query "delete from artist") client
       execute_ (Query "insert into artist values ('Led Zeppelin', 1968)") client
 
       artists <- query_ (Query "select * from artist order by name desc" :: Query Artist) client
       artists `shouldEqual` [Artist { name: "Led Zeppelin", year: 1968 }]
 
-      liftEff $ end client
+      liftEff $ release client
+      liftEff $ end pool
 
   describe "Error handling" do
     it "When query cannot be converted to the requested data type we get an error" do
@@ -96,7 +99,8 @@ main = run [consoleReporter] do
 
   describe "Query params" do
     it "Select using a query param" do
-      withClient connectionInfo $ \c -> do
+      pool <- liftEff $ mkPool connectionInfo
+      withClient pool $ \c -> do
         execute_ (Query "delete from artist") c
         execute_ (Query "insert into artist values ('Led Zeppelin', 1968)") c
         execute_ (Query "insert into artist values ('Deep Purple', 1968)") c
@@ -106,10 +110,12 @@ main = run [consoleReporter] do
 
         noRows <- query (Query "select * from artist where name = $1" :: Query Artist) [toSql "FAIL"] c
         length noRows `shouldEqual` 0
+        liftEff $ end pool
 
   describe "data types" do
     it "datetimes can be inserted" do
-      withConnection connectionInfo \c -> do
+      pool <- liftEff $ mkPool connectionInfo
+      withClient pool \c -> do
         execute_ (Query "delete from types") c
         let date = canonicalDate <$> toEnum 2016 <*> Just January <*> toEnum 25
             time = Time <$> toEnum 23 <*> toEnum 1 <*> toEnum 59 <*> toEnum 0
@@ -120,26 +126,33 @@ main = run [consoleReporter] do
           let res = unsafeCoerce <$> ts' >>= toDateTime
           res `shouldEqual` (Just ts)
         ) dt
+        liftEff $ end pool
 
 
   describe "transactions" do
     it "does not commit after an error inside a transation" do
-      withConnection connectionInfo $ \c -> do
+      pool <- liftEff $ mkPool connectionInfo
+      withClient pool $ \c -> do
         execute_ (Query "delete from artist") c
         apathize $ tryInsert c
         one <- queryOne_ (Query "select * from artist" :: Query Artist) c
 
         one `shouldEqual` Nothing
+        liftEff $ end pool
           where
           tryInsert = withTransaction $ \c -> do
             execute_ (Query "insert into artist values ('Not there', 1999)") c
             throwError $ error "fail"
 
 exampleError :: forall eff. Aff (db :: DB | eff) (Maybe Artist)
-exampleError = withConnection connectionInfo $ \c -> do
-  execute_ (Query "delete from artist") c
-  execute_ (Query "insert into artist values ('Led Zeppelin', 1968)") c
-  queryOne_ (Query "select year from artist") c
+exampleError = do
+  pool <- liftEff $ mkPool connectionInfo
+  withClient pool $ \c -> do
+    execute_ (Query "delete from artist") c
+    execute_ (Query "insert into artist values ('Led Zeppelin', 1968)") c
+    result <- queryOne_ (Query "select year from artist") c
+    liftEff $ end pool
+    pure result
 
 instance artistShow :: Show Artist where
   show (Artist p) = "Artist (" <> p.name <> ", " <> show p.year <> ")"

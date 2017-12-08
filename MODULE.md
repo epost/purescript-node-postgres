@@ -195,6 +195,13 @@ instance isSqlValueMaybe :: (IsSqlValue a) => IsSqlValue (Maybe a)
 ```
 
 
+#### `isSqlValueArray`
+
+``` purescript
+instance isSqlValueArray :: (IsSqlValue a) => IsSqlValue (Array a)
+```
+
+
 
 ## Module Database.Postgres.Transaction
 

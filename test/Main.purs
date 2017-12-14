@@ -128,6 +128,17 @@ main = run [consoleReporter] do
         ) dt
         liftEff $ end pool
 
+  describe "sql arrays as parameters" $
+    it "can be passed as a SqlValue" do
+      pool <- liftEff $ mkPool connectionInfo
+      withClient pool \c -> do
+        execute_ (Query "delete from artist") c
+        execute_ (Query "insert into artist values ('Zed Leppelin', 1967)") c
+        execute_ (Query "insert into artist values ('Led Zeppelin', 1968)") c
+        execute_ (Query "insert into artist values ('Deep Purple', 1969)") c
+        artists <- query (Query "select * from artist where year = any ($1)" :: Query Artist) [toSql [1968, 1969]] c
+        length artists `shouldEqual` 2
+        liftEff $ end pool
 
   describe "transactions" do
     it "does not commit after an error inside a transation" do

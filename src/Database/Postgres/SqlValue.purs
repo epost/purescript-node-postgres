@@ -31,6 +31,9 @@ instance isSqlValueInt :: IsSqlValue Int where
 instance isSqlValueMaybe :: (IsSqlValue a) => IsSqlValue (Maybe a) where
   toSql = unsafeCoerce <<< toNullable <<< (toSql <$> _)
 
+instance isSqlValueArray :: (IsSqlValue a) => IsSqlValue (Array a) where
+  toSql = unsafeCoerce <<< map toSql
+
 instance isSqlValueDateTime :: IsSqlValue DateTime where
   toSql = toSql <<< format
     where

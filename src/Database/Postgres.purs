@@ -2,7 +2,6 @@ module Database.Postgres
   ( Query(..)
   , Client
   , Pool
-  , DB
   , ConnectionInfo
   , ClientConfig
   , PoolConfig
@@ -23,20 +22,17 @@ module Database.Postgres
 
 import Prelude
 
-import Control.Monad.Aff (Aff, bracket)
-import Control.Monad.Aff.Compat (EffFnAff, fromEffFnAff)
-import Control.Monad.Eff (kind Effect, Eff)
-import Control.Monad.Eff.Class (liftEff)
-import Control.Monad.Eff.Exception (error)
 import Control.Monad.Error.Class (throwError)
-import Control.Monad.Except (runExcept)
 import Data.Array ((!!))
 import Data.Either (Either, either)
-import Data.Foreign (Foreign, MultipleErrors)
-import Data.Foreign.Class (class Decode, decode)
 import Data.Maybe (Maybe(Just, Nothing), maybe)
 import Data.Traversable (sequence)
 import Database.Postgres.SqlValue (SqlValue)
+import Effect (Effect)
+import Effect.Aff (Aff, Error, bracket)
+import Effect.Aff.Compat (EffectFnAff, fromEffectFnAff)
+import Effect.Class (liftEffect)
+import Foreign (Foreign)
 import Unsafe.Coerce (unsafeCoerce)
 
 newtype Query a = Query String
@@ -44,8 +40,6 @@ newtype Query a = Query String
 foreign import data Pool :: Type
 
 foreign import data Client :: Type
-
-foreign import data DB :: Effect
 
 foreign import data ConnectionInfo :: Type
 
@@ -90,93 +84,84 @@ connectionInfoFromConfig c p = unsafeCoerce
   }
 
 -- | Makes a connection to the database via a Client.
-connect :: forall eff. Pool -> Aff (db :: DB | eff) Client
-connect = fromEffFnAff <<< connect'
+connect :: Pool -> Aff Client
+connect = fromEffectFnAff <<< connect'
 
 -- | Runs a query and returns nothing.
-execute :: forall eff a. Query a -> Array SqlValue -> Client -> Aff (db :: DB | eff) Unit
-execute (Query sql) params client = void $ fromEffFnAff $ runQuery sql params client
+execute :: forall a. Query a -> Array SqlValue -> Client -> Aff Unit
+execute (Query sql) params client = void $ fromEffectFnAff $ runQuery sql params client
 
 -- | Runs a query and returns nothing
-execute_ :: forall eff a. Query a -> Client -> Aff (db :: DB | eff) Unit
-execute_ (Query sql) client = void $ fromEffFnAff $ runQuery_ sql client
+execute_ :: forall a. Query a -> Client -> Aff Unit
+execute_ (Query sql) client = void $ fromEffectFnAff $ runQuery_ sql client
 
 -- | Runs a query and returns all results.
-query :: forall eff a
-  . Decode a
-  => Query a -> Array SqlValue -> Client -> Aff (db :: DB | eff) (Array a)
-query (Query sql) params client = do
-  rows <- fromEffFnAff $ runQuery sql params client
-  either liftError pure (runExcept (sequence $ decode <$> rows))
+query :: forall a
+  . (Foreign -> Either Error a) -> Query a -> Array SqlValue -> Client -> Aff (Array a)
+query decode (Query sql) params client = do
+  rows <- fromEffectFnAff $ runQuery sql params client
+  either throwError pure (sequence $ decode <$> rows)
 
 -- | Just like `query` but does not make any param replacement
-query_ :: forall eff a
-  . Decode a
-  => Query a -> Client -> Aff (db :: DB | eff) (Array a)
-query_ (Query sql) client = do
-  rows <- fromEffFnAff $ runQuery_ sql client
-  either liftError pure (runExcept (sequence $ decode <$> rows))
+query_ :: forall a
+  . (Foreign -> Either Error a) -> Query a -> Client -> Aff (Array a)
+query_ decode (Query sql) client = do
+  rows <- fromEffectFnAff $ runQuery_ sql client
+  either throwError pure (sequence $ decode <$> rows)
 
 -- | Runs a query and returns the first row, if any
-queryOne :: forall eff a
-  . Decode a
-  => Query a -> Array SqlValue -> Client -> Aff (db :: DB | eff) (Maybe a)
-queryOne (Query sql) params client = do
-  rows <- fromEffFnAff $ runQuery sql params client
-  maybe (pure Nothing) (either liftError (pure <<< Just)) (decodeFirst rows)
+queryOne :: forall a
+  . (Foreign -> Either Error a) -> Query a -> Array SqlValue -> Client -> Aff (Maybe a)
+queryOne decode (Query sql) params client = do
+  rows <- fromEffectFnAff $ runQuery sql params client
+  maybe (pure Nothing) (either throwError (pure <<< Just)) (decodeFirst decode rows)
 
 -- | Just like `queryOne` but does not make any param replacement
-queryOne_ :: forall eff a
-  . Decode a
-  => Query a -> Client -> Aff (db :: DB | eff) (Maybe a)
-queryOne_ (Query sql) client = do
-  rows <- fromEffFnAff $ runQuery_ sql client
-  maybe (pure Nothing) (either liftError (pure <<< Just)) (decodeFirst rows)
+queryOne_ :: forall a
+  . (Foreign -> Either Error a) -> Query a -> Client -> Aff (Maybe a)
+queryOne_ decode (Query sql) client = do
+  rows <- fromEffectFnAff $ runQuery_ sql client
+  maybe (pure Nothing) (either throwError (pure <<< Just)) (decodeFirst decode rows)
 
 -- | Runs a query and returns a single value, if any.
-queryValue :: forall eff a
-  . Decode a
-  => Query a -> Array SqlValue -> Client -> Aff (db :: DB | eff) (Maybe a)
-queryValue (Query sql) params client = do
-  val <- fromEffFnAff $ runQueryValue sql params client
-  pure $ either (const Nothing) Just (runExcept (decode val))
+queryValue :: forall a
+  . (Foreign -> Either Error a) -> Query a -> Array SqlValue -> Client -> Aff (Maybe a)
+queryValue decode (Query sql) params client = do
+  val <- fromEffectFnAff $ runQueryValue sql params client
+  pure $ either (const Nothing) Just (decode val)
 
 -- | Just like `queryValue` but does not make any param replacement
-queryValue_ :: forall eff a
-  . Decode a
-  => Query a -> Client -> Aff (db :: DB | eff) (Maybe a)
-queryValue_ (Query sql) client = do
-  val <- fromEffFnAff $ runQueryValue_ sql client
-  either liftError (pure <<< Just) $ runExcept (decode val)
+queryValue_ :: forall a
+  . (Foreign -> Either Error a) -> Query a -> Client -> Aff (Maybe a)
+queryValue_ decode (Query sql) client = do
+  val <- fromEffectFnAff $ runQueryValue_ sql client
+  either throwError (pure <<< Just) $ (decode val)
 
 -- | Connects to the database, calls the provided function with the client
 -- | and returns the results.
-withClient :: forall eff a
-  . Pool -> (Client -> Aff (db :: DB | eff) a) -> Aff (db :: DB | eff) a
+withClient :: forall a
+  . Pool -> (Client -> Aff a) -> Aff a
 withClient pool p =
   bracket
     (connect pool)
-    (liftEff <<< release)
+    (liftEffect <<< release)
     p
 
-decodeFirst :: forall a. Decode a => Array Foreign -> Maybe (Either MultipleErrors a)
-decodeFirst rows = runExcept <<< decode <$> (rows !! 0)
+decodeFirst :: forall a. (Foreign -> Either Error a) -> Array Foreign -> Maybe (Either Error a)
+decodeFirst decode rows = decode <$> (rows !! 0)
 
-liftError :: forall e a. MultipleErrors -> Aff e a
-liftError errs = throwError $ error (show errs)
+foreign import mkPool :: ConnectionInfo -> Effect Pool
 
-foreign import mkPool :: forall eff. ConnectionInfo -> Eff (db :: DB | eff) Pool
+foreign import connect' :: Pool -> EffectFnAff Client
 
-foreign import connect' :: forall eff. Pool -> EffFnAff (db :: DB | eff) Client
+foreign import runQuery_ :: String -> Client -> EffectFnAff (Array Foreign)
 
-foreign import runQuery_ :: forall eff. String -> Client -> EffFnAff (db :: DB | eff) (Array Foreign)
+foreign import runQuery :: String -> Array SqlValue -> Client -> EffectFnAff (Array Foreign)
 
-foreign import runQuery :: forall eff. String -> Array SqlValue -> Client -> EffFnAff (db :: DB | eff) (Array Foreign)
+foreign import runQueryValue_ :: String -> Client -> EffectFnAff Foreign
 
-foreign import runQueryValue_ :: forall eff. String -> Client -> EffFnAff (db :: DB | eff) Foreign
+foreign import runQueryValue :: String -> Array SqlValue -> Client -> EffectFnAff Foreign
 
-foreign import runQueryValue :: forall eff. String -> Array SqlValue -> Client -> EffFnAff (db :: DB | eff) Foreign
+foreign import release :: Client -> Effect Unit
 
-foreign import release :: forall eff. Client -> Eff (db :: DB | eff) Unit
-
-foreign import end :: forall eff. Pool -> Eff (db :: DB | eff) Unit
+foreign import end :: Pool -> Effect Unit

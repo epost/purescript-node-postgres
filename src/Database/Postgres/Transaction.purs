@@ -1,11 +1,11 @@
 module Database.Postgres.Transaction where
 
 import Prelude
-import Control.Monad.Aff (Aff, attempt)
+import Effect.Aff (Aff, attempt)
 import Control.Monad.Error.Class (throwError)
 import Data.Either (either)
 
-import Database.Postgres (DB, Client, Query(Query), execute_)
+import Database.Postgres (Client, Query(Query), execute_)
 
 -- | Runs an asynchronous action in a database transaction. The transaction
 -- | will be rolled back if the computation fails and committed otherwise.
@@ -19,7 +19,7 @@ import Database.Postgres (DB, Client, Query(Query), execute_)
 -- |   throwError $ error "Something went wrong"
 -- |   execute_ (Query "insert into accounts ...") c
 -- | ```
-withTransaction :: forall eff a. (Client -> Aff (db :: DB | eff) a) -> Client -> Aff (db :: DB | eff) a
+withTransaction :: forall a. (Client -> Aff a) -> Client -> Aff a
 withTransaction act client = do
   begin client
   res <- attempt (act client)
@@ -28,11 +28,11 @@ withTransaction act client = do
     rollback_ err = rollback client *> throwError err
     commit_ v = commit client *> pure v
 
-begin :: forall eff. Client -> Aff (db :: DB | eff) Unit
+begin :: Client -> Aff Unit
 begin = execute_ (Query "BEGIN TRANSACTION")
 
-commit :: forall eff. Client -> Aff (db :: DB | eff) Unit
+commit :: Client -> Aff Unit
 commit = execute_ (Query "COMMIT")
 
-rollback :: forall eff. Client -> Aff (db :: DB | eff) Unit
+rollback :: Client -> Aff Unit
 rollback = execute_ (Query "ROLLBACK")

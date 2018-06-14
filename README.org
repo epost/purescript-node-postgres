@@ -45,4 +45,4 @@ pulp test
 
 * Documentation
 
-See [[file:./MODULE.md][Module documentation]].
+See [[https://pursuit.purescript.org/packages/purescript-node-postgres/5.0.0][Module documentation]].

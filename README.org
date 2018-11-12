@@ -31,6 +31,7 @@ Create a Postgres database and run the tests:
 
 #+begin_src bash
 psql --command="create database test"
+psql --command="create user testuser"
 cat schema.sql | psql --username=testuser test
 #+end_src
 
@@ -39,7 +40,8 @@ cat schema.sql | psql --username=testuser test
 Let's run some tests:
 
 #+begin_src bash
-pulp install
+bower install
+npm install
 pulp test
 #+end_src
 

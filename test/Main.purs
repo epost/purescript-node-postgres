@@ -130,6 +130,19 @@ main = run [consoleReporter] do
         length artists `shouldEqual` 2
         liftEffect $ end pool
 
+  describe "sql boolean as parameter" $
+    it "can be passed as a SqlValue" do
+      pool <- liftEffect $ mkPool connectionInfo
+      withClient pool \c -> do
+        execute_ (Query "delete from artist") c
+        execute_ (Query "insert into artist values ('Led Zeppelin', 1968)") c -- false by default
+        execute_ (Query "insert into artist values ('Deep Purple', 1969, TRUE)") c
+        aliveArtists <- query read' (Query "select * from artist where isAlive = ($1)" :: Query Artist) [toSql true] c
+        notAliveArtists <- query read' (Query "select * from artist where isAlive = ($1)" :: Query Artist) [toSql false] c
+        length aliveArtists `shouldEqual` 1
+        length notAliveArtists `shouldEqual` 1
+        liftEffect $ end pool
+
   describe "transactions" do
     it "does not commit after an error inside a transation" do
       pool <- liftEffect $ mkPool connectionInfo

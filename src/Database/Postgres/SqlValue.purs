@@ -22,6 +22,12 @@ class IsSqlValue a where
 instance isSqlValueString :: IsSqlValue String where
   toSql = unsafeCoerce
 
+instance isSqlValueBoolean :: IsSqlValue Boolean where
+  toSql val =
+    if val
+      then toSql "true"
+      else toSql "false"
+
 instance isSqlValueNumber :: IsSqlValue Number where
   toSql = unsafeCoerce
 

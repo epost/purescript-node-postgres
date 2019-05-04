@@ -13,36 +13,36 @@ PureScript bindings for the [[https://www.npmjs.org/package/pg][pg library]] ([[
 
 * Installation
 
-I'll assume you have [[http://www.purescript.org/][PureScript]] and [[http://www.postgresql.org/][PostgreSQL]] installed. You'll also need [[https://github.com/bodil/pulp][purescript-pulp]] and [[https://www.npmjs.org/package/pg][pg]]:
-
-#+begin_src bash
-npm install pg
-npm install -g pulp
-#+end_src
-
-Clone the project:
+Clone the project and install its dependencies:
 
 #+begin_src bash
 git clone https://github.com/epost/purescript-node-postgres
 cd purescript-node-postgres
+npm install
 #+end_src
 
-Create a Postgres database and run the tests:
+* Building
+
+Build:
+
+#+begin_src bash
+npm run build
+#+end_src
+
+* Testing
+
+Assuming you have [[http://www.postgresql.org/][PostgreSQL]] installed, create a database with some test data:
 
 #+begin_src bash
 psql --command="create database test"
 psql --command="create user testuser"
-cat schema.sql | psql --username=testuser test
+psql --username=testuser test -f schema.sql
 #+end_src
 
-* Building and running
-
-Let's run some tests:
+Then run the tests:
 
 #+begin_src bash
-bower install
-npm install
-pulp test
+npm run test
 #+end_src
 
 * Documentation

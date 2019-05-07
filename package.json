@@ -7,9 +7,9 @@
     "test": "test"
   },
   "scripts": {
-    "postinstall": "PATH=node_modules/.bin:$PATH bower install",
-    "build": "PATH=node_modules/.bin:$PATH pulp build",
-    "test": "PATH=node_modules/.bin:$PATH pulp test"
+    "postinstall": "bower install",
+    "build": "pulp build",
+    "test": "pulp test"
   },
   "repository": {
     "type": "git",

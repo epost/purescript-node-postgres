@@ -85,7 +85,7 @@ connectionInfoFromConfig c p = unsafeCoerce
 
 -- | Makes a connection to the database via a Client.
 connect :: Pool -> Aff Client
-connect = fromEffectFnAff <<< connect'
+connect = fromEffectFnAff <<< connectImpl
 
 -- | Runs a query and returns nothing.
 execute :: forall a. Query a -> Array SqlValue -> Client -> Aff Unit
@@ -152,7 +152,7 @@ decodeFirst decode rows = decode <$> (rows !! 0)
 
 foreign import mkPool :: ConnectionInfo -> Effect Pool
 
-foreign import connect' :: Pool -> EffectFnAff Client
+foreign import connectImpl :: Pool -> EffectFnAff Client
 
 foreign import runQuery_ :: String -> Client -> EffectFnAff (Array Foreign)
 

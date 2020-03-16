@@ -9,7 +9,7 @@ exports.mkPool = function (conInfo) {
   };
 }
 
-exports["connect'"] = function (pool) {
+exports.connectImpl = function (pool) {
   return function(error, success) {
     pool.connect(function(err, client) {
       if (err) {

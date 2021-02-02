@@ -1,0 +1,41 @@
+{
+  "name": "purescript-datetime",
+  "homepage": "https://github.com/purescript/purescript-datetime",
+  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/purescript/purescript-datetime.git"
+  },
+  "ignore": [
+    "**/.*",
+    "bower_components",
+    "node_modules",
+    "output",
+    "bower.json",
+    "package.json"
+  ],
+  "dependencies": {
+    "purescript-bifunctors": "^4.0.0",
+    "purescript-control": "^4.0.0",
+    "purescript-either": "^4.0.0",
+    "purescript-enums": "^4.0.0",
+    "purescript-foldable-traversable": "^4.0.0",
+    "purescript-functions": "^4.0.0",
+    "purescript-gen": "^2.0.0",
+    "purescript-integers": "^4.0.0",
+    "purescript-lists": "^5.0.0",
+    "purescript-math": "^2.1.1",
+    "purescript-maybe": "^4.0.0",
+    "purescript-newtype": "^3.0.0",
+    "purescript-ordered-collections": "^1.0.0",
+    "purescript-partial": "^2.0.0",
+    "purescript-prelude": "^4.0.0",
+    "purescript-tuples": "^5.0.0"
+  },
+  "devDependencies": {
+    "purescript-assert": "^4.0.0",
+    "purescript-console": "^4.0.0",
+    "purescript-strings": "^4.0.0",
+    "purescript-proxy": "^3.0.0"
+  }
+}

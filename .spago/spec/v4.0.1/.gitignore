@@ -1,0 +1,10 @@
+.psci
+.psci_modules/
+bower_components/
+generated-docs/
+node_modules/
+output/
+tmp/
+/*.log
+tags
+/.psc-ide-port

@@ -1,0 +1,33 @@
+{
+  "name": "purescript-parallel",
+  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/purescript/purescript-parallel.git"
+  },
+  "ignore": [
+    "**/.*",
+    "bower_components",
+    "node_modules",
+    "output",
+    "test",
+    "bower.json",
+    "package.json"
+  ],
+  "dependencies": {
+    "purescript-control": "^4.0.0",
+    "purescript-effect": "^2.0.0",
+    "purescript-either": "^4.0.0",
+    "purescript-foldable-traversable": "^4.0.0",
+    "purescript-functors": "^3.0.0",
+    "purescript-maybe": "^4.0.0",
+    "purescript-newtype": "^3.0.0",
+    "purescript-prelude": "^4.0.0",
+    "purescript-refs": "^4.0.0",
+    "purescript-transformers": "^4.0.0"
+  },
+  "devDependencies": {
+    "purescript-console": "^4.0.0",
+    "purescript-functions": "^4.0.0"
+  }
+}

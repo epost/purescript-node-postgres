@@ -1,9 +1,0 @@
-/.*
-!/.gitignore
-!/.jshintrc
-!/.jscsrc
-!/.travis.yml
-/bower_components/
-/node_modules/
-/output/
-package-lock.json

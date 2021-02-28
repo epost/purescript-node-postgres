@@ -144,7 +144,7 @@ main = run [consoleReporter] do
         liftEffect $ end pool
 
   describe "transactions" do
-    it "does not commit after an error inside a transation" do
+    it "does not commit after an error inside a transaction" do
       pool <- liftEffect $ mkPool connectionInfo
       withClient pool $ \c -> do
         execute_ (Query "delete from artist") c

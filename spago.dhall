@@ -1,8 +1,4 @@
-{-
-Welcome to a Spago project!
-You can edit this file as you like.
--}
-{ name = "my-project"
+{ name = "purescript-node-postgres"
 , dependencies =
   [ "console", "effect", "js-date", "psci-support", "simple-json", "spec" ]
 , packages = ./packages.dhall

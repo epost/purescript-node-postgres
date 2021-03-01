@@ -7,9 +7,9 @@
     "test": "test"
   },
   "scripts": {
-    "postinstall": "bower install",
-    "build": "pulp build",
-    "test": "pulp test"
+    "postinstall": "spago install",
+    "build": "spago build",
+    "test": "spago test"
   },
   "repository": {
     "type": "git",
@@ -30,8 +30,7 @@
     "pg": "^7.10.0"
   },
   "devDependencies": {
-    "bower": "^1.8.8",
-    "pulp": "^12.4.2",
-    "purescript": "^0.12.5"
+    "purescript": "^0.13.8",
+    "spago": "^0.19.1"
   }
 }

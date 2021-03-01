@@ -25,7 +25,7 @@ import Simple.JSON as JSON
 import Test.Spec (describe, it)
 import Test.Spec.Assertions (fail, shouldEqual)
 import Test.Spec.Reporter.Console (consoleReporter)
-import Test.Spec.Runner (run, runSpec)
+import Test.Spec.Runner (runSpec)
 import Unsafe.Coerce (unsafeCoerce)
 
 type Artist =
@@ -50,7 +50,7 @@ read' :: forall a. JSON.ReadForeign a => Foreign -> Either Error a
 read' = lmap (error <<< show) <<< JSON.read
 
 main :: Effect Unit
-main = launchAff_ do 
+main = launchAff_ do
   runSpec [consoleReporter] do
     describe "withClient" do
       it "Returns a client" do
@@ -145,7 +145,7 @@ main = launchAff_ do
           liftEffect $ end pool
 
     describe "transactions" do
-      it "does not commit after an error inside a transation" do
+      it "does not commit after an error inside a transaction" do
         pool <- liftEffect $ mkPool connectionInfo
         withClient pool $ \c -> do
           execute_ (Query "delete from artist") c

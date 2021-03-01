@@ -1,0 +1,36 @@
+{
+  "name": "purescript-node-postgres",
+  "version": "5.0.0",
+  "description": "PureScript bindings for the pg PostgreSQL library",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "postinstall": "spago install",
+    "build": "spago build",
+    "test": "spago test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/epost/purescript-node-postgres.git"
+  },
+  "keywords": [
+    "postgres",
+    "database",
+    "sql"
+  ],
+  "author": "Erik Post",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/epost/purescript-node-postgres/issues"
+  },
+  "homepage": "https://github.com/epost/purescript-node-postgres#readme",
+  "dependencies": {
+    "pg": "^7.10.0"
+  },
+  "devDependencies": {
+    "purescript": "^0.13.8",
+    "spago": "^0.19.1"
+  }
+}

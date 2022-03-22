@@ -27,10 +27,9 @@
   },
   "homepage": "https://github.com/epost/purescript-node-postgres#readme",
   "dependencies": {
-    "pg": "^7.10.0"
+    "pg": "^8.7.3"
   },
   "devDependencies": {
-    "purescript": "^0.13.8",
-    "spago": "^0.19.1"
+    "spago": "^0.20.7"
   }
 }

@@ -1,0 +1,13 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:13
+    ports:
+      - "5432:5432"
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: test
+      POSTGRES_USER: testuser
+      POSTGRES_DB: test
+    volumes:
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/schema.sql

@@ -1,15 +1,15 @@
 
 // module Database.Postgres
 
-var pg = require('pg');
+import pg from 'pg';
 
-exports.mkPool = function (conInfo) {
+export function mkPool(conInfo) {
   return function () {
     return new pg.Pool(conInfo);
   };
 }
 
-exports.connectImpl = function (pool) {
+export function connectImpl(pool) {
   return function(error, success) {
     pool.connect(function(err, client) {
       if (err) {
@@ -24,7 +24,7 @@ exports.connectImpl = function (pool) {
   };
 }
 
-exports.runQuery_ = function(queryStr) {
+export function runQuery_(queryStr) {
   return function(client) {
     return function(error, success) {
       client.query(queryStr, function(err, result) {
@@ -41,7 +41,7 @@ exports.runQuery_ = function(queryStr) {
   };
 }
 
-exports.runQuery = function(queryStr) {
+export function runQuery(queryStr) {
   return function(params) {
     return function(client) {
       return function(error, success) {
@@ -57,7 +57,7 @@ exports.runQuery = function(queryStr) {
   };
 }
 
-exports.runQueryValue_ = function(queryStr) {
+export function runQueryValue_(queryStr) {
   return function(client) {
     return function(error, success) {
       client.query(queryStr, function(err, result) {
@@ -71,7 +71,7 @@ exports.runQueryValue_ = function(queryStr) {
   };
 }
 
-exports.runQueryValue = function(queryStr) {
+export function runQueryValue(queryStr) {
   return function(params) {
     return function(client) {
       return function(error, success) {
@@ -87,13 +87,13 @@ exports.runQueryValue = function(queryStr) {
   };
 }
 
-exports.release = function (client) {
+export function release(client) {
   return function () {
     client.release();
   };
 }
 
-exports.end = function(pool) {
+export function end(pool) {
   return function() {
     pool.end();
   };

@@ -3,7 +3,7 @@ module Test.Main where
 import Prelude
 
 import Control.Monad.Error.Class (throwError)
-import Data.Argonaut (Json, decodeJson, printJsonDecodeError)
+import Data.Argonaut (class DecodeJson, Json, decodeJson, printJsonDecodeError)
 import Data.Array (length)
 import Data.Bifunctor (lmap)
 import Data.Date (canonicalDate)
@@ -11,14 +11,14 @@ import Data.Date.Component (Month(..))
 import Data.DateTime (DateTime(..))
 import Data.Either (Either, either)
 import Data.Enum (toEnum)
-import Data.JSDate (JSDate, toDateTime)
+import Data.JSDate (toDateTime)
 import Data.Maybe (Maybe(Nothing, Just), maybe)
 import Data.Time (Time(..))
 import Database.Postgres (Query(Query), connect, end, execute, execute_, query, queryOne_, queryValue_, query_, withClient, ClientConfig, ConnectionInfo, connectionInfoFromConfig, defaultPoolConfig, mkPool, release)
 import Database.Postgres.SqlValue (toSql)
 import Database.Postgres.Transaction (withTransaction)
 import Effect (Effect)
-import Effect.Aff (Aff, Error, apathize, attempt, error, launchAff_)
+import Effect.Aff (Aff, Error, apathize, attempt, launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Exception (error)
 import Foreign (Foreign)
@@ -46,20 +46,17 @@ clientConfig =
 connectionInfo :: ConnectionInfo
 connectionInfo = connectionInfoFromConfig clientConfig defaultPoolConfig
 
--- read' :: forall a. JSON.ReadForeign a => Foreign -> Either Error a
--- read' = lmap (error <<< show) <<< JSON.read
-
+read' ∷ ∀ (t ∷ Type). DecodeJson t ⇒ Foreign → Either Error t
 read' = toJson >>> decodeJson >>> lmap toError
   where
-    toJson :: Foreign -> Json
-    toJson = unsafeCoerce
+  toJson :: Foreign -> Json
+  toJson = unsafeCoerce
 
-    toError = printJsonDecodeError >>> error
-
+  toError = printJsonDecodeError >>> error
 
 main :: Effect Unit
 main = launchAff_ do
-  runSpec [consoleReporter] do
+  runSpec [ consoleReporter ] do
     describe "withClient" do
       it "Returns a client" do
         pool <- liftEffect $ mkPool connectionInfo
@@ -86,7 +83,7 @@ main = launchAff_ do
         execute_ (Query "insert into artist values ('Led Zeppelin', 1968)") client
 
         artists <- query_ read' (Query "select * from artist order by name desc" :: Query Artist) client
-        artists `shouldEqual` [{ name: "Led Zeppelin", year: 1968 }]
+        artists `shouldEqual` [ { name: "Led Zeppelin", year: 1968 } ]
 
         liftEffect $ release client
         liftEffect $ end pool
@@ -104,10 +101,10 @@ main = launchAff_ do
           execute_ (Query "insert into artist values ('Led Zeppelin', 1968)") c
           execute_ (Query "insert into artist values ('Deep Purple', 1968)") c
           execute_ (Query "insert into artist values ('Toto', 1977)") c
-          artists <- query read' (Query "select * from artist where name = $1" :: Query Artist) [toSql "Toto"] c
+          artists <- query read' (Query "select * from artist where name = $1" :: Query Artist) [ toSql "Toto" ] c
           length artists `shouldEqual` 1
 
-          noRows <- query read' (Query "select * from artist where name = $1" :: Query Artist) [toSql "FAIL"] c
+          noRows <- query read' (Query "select * from artist where name = $1" :: Query Artist) [ toSql "FAIL" ] c
           length noRows `shouldEqual` 0
           liftEffect $ end pool
 
@@ -116,15 +113,18 @@ main = launchAff_ do
         pool <- liftEffect $ mkPool connectionInfo
         withClient pool \c -> do
           execute_ (Query "delete from types") c
-          let date = canonicalDate <$> toEnum 2016 <*> Just January <*> toEnum 25
-              time = Time <$> toEnum 23 <*> toEnum 1 <*> toEnum 59 <*> toEnum 0
-              dt = DateTime <$> date <*> time
-          maybe (fail "Not a datetime") (\ts -> do
-            execute (Query "insert into types(timestamp_no_tz) VALUES ($1)") [toSql ts] c
-            ts' <- queryValue_ read' (Query "select timestamp_no_tz at time zone 'UTC' from types" :: Query Json) c
-            let res = unsafeCoerce <$> ts' >>= toDateTime
-            res `shouldEqual` (Just ts)
-          ) dt
+          let
+            date = canonicalDate <$> toEnum 2016 <*> Just January <*> toEnum 25
+            time = Time <$> toEnum 23 <*> toEnum 1 <*> toEnum 59 <*> toEnum 0
+            dt = DateTime <$> date <*> time
+          maybe (fail "Not a datetime")
+            ( \ts -> do
+                execute (Query "insert into types(timestamp_no_tz) VALUES ($1)") [ toSql ts ] c
+                ts' <- queryValue_ read' (Query "select timestamp_no_tz at time zone 'UTC' from types" :: Query Json) c
+                let res = unsafeCoerce <$> ts' >>= toDateTime
+                res `shouldEqual` (Just ts)
+            )
+            dt
           liftEffect $ end pool
 
     describe "sql arrays as parameters" $
@@ -135,7 +135,7 @@ main = launchAff_ do
           execute_ (Query "insert into artist values ('Zed Leppelin', 1967)") c
           execute_ (Query "insert into artist values ('Led Zeppelin', 1968)") c
           execute_ (Query "insert into artist values ('Deep Purple', 1969)") c
-          artists <- query read' (Query "select * from artist where year = any ($1)" :: Query Artist) [toSql [1968, 1969]] c
+          artists <- query read' (Query "select * from artist where year = any ($1)" :: Query Artist) [ toSql [ 1968, 1969 ] ] c
           length artists `shouldEqual` 2
           liftEffect $ end pool
 
@@ -146,8 +146,8 @@ main = launchAff_ do
           execute_ (Query "delete from artist") c
           execute_ (Query "insert into artist values ('Led Zeppelin', 1968)") c -- false by default
           execute_ (Query "insert into artist values ('Deep Purple', 1969, TRUE)") c
-          aliveArtists <- query read' (Query "select * from artist where isAlive = ($1)" :: Query Artist) [toSql true] c
-          notAliveArtists <- query read' (Query "select * from artist where isAlive = ($1)" :: Query Artist) [toSql false] c
+          aliveArtists <- query read' (Query "select * from artist where isAlive = ($1)" :: Query Artist) [ toSql true ] c
+          notAliveArtists <- query read' (Query "select * from artist where isAlive = ($1)" :: Query Artist) [ toSql false ] c
           length aliveArtists `shouldEqual` 1
           length notAliveArtists `shouldEqual` 1
           liftEffect $ end pool
@@ -162,10 +162,10 @@ main = launchAff_ do
 
           one `shouldEqual` Nothing
           liftEffect $ end pool
-            where
-            tryInsert = withTransaction $ \c -> do
-              execute_ (Query "insert into artist values ('Not there', 1999)") c
-              throwError $ error "fail"
+  where
+  tryInsert = withTransaction $ \c -> do
+    execute_ (Query "insert into artist values ('Not there', 1999)") c
+    throwError $ error "fail"
 
 exampleError :: Aff (Maybe Artist)
 exampleError = do

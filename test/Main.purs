@@ -3,6 +3,7 @@ module Test.Main where
 import Prelude
 
 import Control.Monad.Error.Class (throwError)
+import Data.Argonaut (Json, decodeJson, printJsonDecodeError)
 import Data.Array (length)
 import Data.Bifunctor (lmap)
 import Data.Date (canonicalDate)
@@ -10,18 +11,17 @@ import Data.Date.Component (Month(..))
 import Data.DateTime (DateTime(..))
 import Data.Either (Either, either)
 import Data.Enum (toEnum)
-import Data.JSDate (toDateTime)
+import Data.JSDate (JSDate, toDateTime)
 import Data.Maybe (Maybe(Nothing, Just), maybe)
 import Data.Time (Time(..))
 import Database.Postgres (Query(Query), connect, end, execute, execute_, query, queryOne_, queryValue_, query_, withClient, ClientConfig, ConnectionInfo, connectionInfoFromConfig, defaultPoolConfig, mkPool, release)
 import Database.Postgres.SqlValue (toSql)
 import Database.Postgres.Transaction (withTransaction)
 import Effect (Effect)
-import Effect.Aff (Aff, Error, apathize, attempt, launchAff_)
+import Effect.Aff (Aff, Error, apathize, attempt, error, launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Exception (error)
 import Foreign (Foreign)
-import Simple.JSON as JSON
 import Test.Spec (describe, it)
 import Test.Spec.Assertions (fail, shouldEqual)
 import Test.Spec.Reporter.Console (consoleReporter)
@@ -46,8 +46,16 @@ clientConfig =
 connectionInfo :: ConnectionInfo
 connectionInfo = connectionInfoFromConfig clientConfig defaultPoolConfig
 
-read' :: forall a. JSON.ReadForeign a => Foreign -> Either Error a
-read' = lmap (error <<< show) <<< JSON.read
+-- read' :: forall a. JSON.ReadForeign a => Foreign -> Either Error a
+-- read' = lmap (error <<< show) <<< JSON.read
+
+read' = toJson >>> decodeJson >>> lmap toError
+  where
+    toJson :: Foreign -> Json
+    toJson = unsafeCoerce
+
+    toError = printJsonDecodeError >>> error
+
 
 main :: Effect Unit
 main = launchAff_ do
@@ -113,7 +121,7 @@ main = launchAff_ do
               dt = DateTime <$> date <*> time
           maybe (fail "Not a datetime") (\ts -> do
             execute (Query "insert into types(timestamp_no_tz) VALUES ($1)") [toSql ts] c
-            ts' <- queryValue_ read' (Query "select timestamp_no_tz at time zone 'UTC' from types" :: Query Foreign) c
+            ts' <- queryValue_ read' (Query "select timestamp_no_tz at time zone 'UTC' from types" :: Query Json) c
             let res = unsafeCoerce <$> ts' >>= toDateTime
             res `shouldEqual` (Just ts)
           ) dt

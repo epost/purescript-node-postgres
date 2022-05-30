@@ -1,6 +1,20 @@
 { name = "purescript-node-postgres"
 , dependencies =
-  [ "console", "effect", "js-date", "psci-support", "simple-json", "spec" ]
+  [ "aff"
+  , "arrays"
+  , "datetime"
+  , "effect"
+  , "either"
+  , "enums"
+  , "foldable-traversable"
+  , "foreign"
+  , "integers"
+  , "maybe"
+  , "nullable"
+  , "prelude"
+  , "transformers"
+  , "unsafe-coerce"
+  ]
 , packages = ./packages.dhall
-, sources = [ "src/**/*.purs", "test/**/*.purs" ]
+, sources = [ "src/**/*.purs" ]
 }
